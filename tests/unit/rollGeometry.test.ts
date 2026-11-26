@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import {
+  HIT_RADIUS,
+  ROW_H,
+  distToBox,
+  isDoubleTap,
+  isTap,
+  nearestNote,
+  noteBox,
+  tapSlop,
   dragMidi,
   dragStepDelta,
   notesInRange,
@@ -37,7 +45,7 @@ describe('rollGeometry', () => {
   });
   it('clamps rows', () => {
     expect(yToRow(0, 5)).toBe(0);
-    expect(yToRow(29, 5)).toBe(1);
+    expect(yToRow(ROW_H + 1, 5)).toBe(1);
     expect(yToRow(9999, 5)).toBe(4);
   });
   it('drag deltas snap', () => {
@@ -58,5 +66,44 @@ describe('rollGeometry', () => {
     ];
     expect(notesInRange(notes, 5, 1)).toEqual(['a', 'b']);
     expect(notesInRange(notes, 2, 3)).toEqual([]);
+  });
+});
+
+describe('touch hit testing', () => {
+  const a = noteBox({ id: 'a', step: 10, length: 25 }, 2, 2.4); // 60 px wide
+  const b = noteBox({ id: 'b', step: 50, length: 25 }, 2, 2.4);
+  it('boxes respect the minimum width and row height', () => {
+    expect(noteBox({ id: 'x', step: 0, length: 2 }, 0, 2.4).w).toBe(24);
+    expect(a.h).toBe(ROW_H - 6);
+    expect(a.w).toBeGreaterThanOrEqual(56);
+  });
+  it('distance is zero inside and euclidean outside', () => {
+    expect(distToBox(a, a.x + 5, a.y + 5)).toBe(0);
+    expect(distToBox(a, a.x + a.w + 10, a.y + 5)).toBe(10);
+    expect(distToBox(a, a.x + a.w + 3, a.y + a.h + 4)).toBe(5);
+  });
+  it('selects the nearest note within the radius, else none', () => {
+    expect(nearestNote([a, b], a.x + 3, a.y + 3)).toBe('a');
+    expect(nearestNote([a, b], a.x + a.w + 10, a.y + 10)).toBe('a');
+    expect(nearestNote([a, b], a.x + a.w + HIT_RADIUS + 2, a.y + 10)).toBeNull();
+    // Between two notes: the nearer wins.
+    const gapMid = (a.x + a.w + b.x) / 2;
+    expect(nearestNote([a, b], gapMid + 3, a.y + 10, 40)).toBe('b');
+    expect(nearestNote([], 0, 0)).toBeNull();
+  });
+  it('a wobbly, quick touch is a tap; a long press or big move is not', () => {
+    expect(tapSlop('touch')).toBeGreaterThanOrEqual(12);
+    expect(tapSlop('mouse')).toBeLessThan(tapSlop('touch'));
+    expect(isTap(9, 120, 'touch')).toBe(true);
+    expect(isTap(13, 120, 'touch')).toBe(false);
+    expect(isTap(9, 120, 'mouse')).toBe(false);
+    expect(isTap(2, 600, 'touch')).toBe(false);
+  });
+  it('detects double taps by time and distance', () => {
+    const t0 = { t: 1000, x: 100, y: 50 };
+    expect(isDoubleTap(null, t0)).toBe(false);
+    expect(isDoubleTap(t0, { t: 1300, x: 110, y: 55 })).toBe(true);
+    expect(isDoubleTap(t0, { t: 1400, x: 100, y: 50 })).toBe(false);
+    expect(isDoubleTap(t0, { t: 1200, x: 140, y: 50 })).toBe(false);
   });
 });

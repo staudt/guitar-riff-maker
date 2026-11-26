@@ -10,7 +10,7 @@ import { NeckView } from '../ui/NeckView';
 import { NeckControls } from '../ui/NeckControls';
 import { EditToolbar } from '../ui/EditToolbar';
 import { RollEditor } from '../ui/RollEditor';
-import { NoteSheet } from '../ui/NoteSheet';
+import { SelectionBar } from '../ui/SelectionBar';
 import { RiffSettingsSheet } from '../ui/RiffSettingsSheet';
 import { installPlayhead } from '../ui/playhead';
 import { stop } from '../audio/sync';
@@ -18,7 +18,6 @@ import { snapScale } from '../app/ui-state';
 import '../ui/screens.css';
 
 export function RiffScreen() {
-  const [openId, setOpenId] = useState<string | null>(null);
   const [pinId, setPinId] = useState<string | null>(null);
 
   useEffect(() => installPlayhead(), []);
@@ -38,7 +37,7 @@ export function RiffScreen() {
     <main class="app riff-screen" data-testid="riff-screen">
       <RiffHeader />
       <section class="riff-screen__views">
-        <TabView onSelectNote={setOpenId} />
+        <TabView />
         <NeckView ghosts={ghosts} onPickGhost={pickGhost} />
         {pinNote ? (
           <div class="pin-banner" data-testid="pin-banner">
@@ -61,18 +60,12 @@ export function RiffScreen() {
       </section>
 
       <section class="riff-screen__edit">
-        <EditToolbar />
-        <RollEditor snapScale={snapScale.value} onOpenNote={setOpenId} />
-        <NoteSheet
-          id={openId}
-          snapToScale={snapScale.value}
-          onClose={() => setOpenId(null)}
-          onPin={(id) => {
-            setOpenId(null);
-            selection.value = new Set([id]);
-            setPinId(id);
-          }}
-        />
+        {selection.value.size ? (
+          <SelectionBar snapToScale={snapScale.value} onPin={setPinId} />
+        ) : (
+          <EditToolbar />
+        )}
+        <RollEditor snapScale={snapScale.value} />
       </section>
       <RiffSettingsSheet />
     </main>

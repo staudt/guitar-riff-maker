@@ -5,8 +5,8 @@ import { inScale } from '../music/theory';
 import type { Midi, PitchClass, ScaleName } from '../music/types';
 
 export const STEP_W = 24;
-/** Free riffs: px per 10 ms tick at zoom 1 (about 160 px per second). */
-export const FREE_STEP_W = 1.6;
+/** Free riffs: px per 10 ms tick at zoom 1 (about 240 px per second; a 250 ms note is 60 px). */
+export const FREE_STEP_W = 2.4;
 /** Height of the seconds ruler above the rows (free riffs). */
 export const RULER_H = 20;
 export const ZOOM_MIN = 0.5;
@@ -25,13 +25,29 @@ export function getRollStepX(): (step: number) => number {
 export function setRollStepX(px: number): void {
   rollStepX = (s) => LABEL_W + s * px;
 }
-export const ROW_H = 28;
+export const ROW_H = 36;
+/** Visual note box: inset from its row, and never narrower than this. */
+export const NOTE_INSET = 3;
+export const MIN_NOTE_W = 24;
+/** Edge handle (outside the note box): hit area and visible grip. */
+export const HANDLE_W = 32;
+export const HANDLE_H = 44;
 export const LABEL_W = 40;
 export const MIN_ROWS = 12;
 export const DEFAULT_LO = 45; // A2
 export const DEFAULT_HI = 57; // A3
 export const DRAG_SLOP = 6;
 export const LONG_PRESS_MS = 450;
+/** Tap vs drag: a pointer that stays within the slop and lifts within TAP_MAX_MS is a tap. Fingers wobble more than mice. */
+export const TAP_SLOP_TOUCH = 12;
+export const TAP_SLOP_MOUSE = 5;
+export const TAP_MAX_MS = 500;
+export const DOUBLE_TAP_MS = 350;
+export const DOUBLE_TAP_DIST = 30;
+/** A tap this close (px) to a note's box selects that note. */
+export const HIT_RADIUS = 14;
+/** Distance (px) from the recorded line that still counts as tapping it. */
+export const TRACE_HIT_RADIUS = 12;
 
 /** Inclusive pitch range shown: min-pad .. max+pad, at least MIN_ROWS rows, default A2..A3 when empty. */
 export function pitchRange(midis: readonly number[], pad = 3): { lo: Midi; hi: Midi } {
@@ -126,4 +142,47 @@ export function midiToRowPos(rows: readonly Midi[], m: number): number {
     if (m <= a && m >= b) return i + (a - m) / (a - b);
   }
   return last;
+}
+
+export const tapSlop = (pointerType: string): number => (pointerType === 'mouse' ? TAP_SLOP_MOUSE : TAP_SLOP_TOUCH);
+/** Slop before a selected note starts moving when dragged. */
+export const dragSlop = (pointerType: string): number => (pointerType === 'mouse' ? 4 : 10);
+
+/** Tap, as opposed to a drag or a press-and-hold: stayed within the slop (even if it wobbled) and was quick. */
+export function isTap(maxDist: number, ms: number, pointerType: string): boolean {
+  return maxDist < tapSlop(pointerType) && ms < TAP_MAX_MS;
+}
+
+export type TapStamp = { t: number; x: number; y: number };
+/** True when `cur` follows `prev` closely in time and place. */
+export function isDoubleTap(prev: TapStamp | null, cur: TapStamp): boolean {
+  if (!prev) return false;
+  const dt = cur.t - prev.t;
+  return dt >= 0 && dt <= DOUBLE_TAP_MS && Math.hypot(cur.x - prev.x, cur.y - prev.y) < DOUBLE_TAP_DIST;
+}
+
+export type NoteBox = { id: string; x: number; y: number; w: number; h: number };
+
+/** Box of a note in grid coordinates (x from step 0, y from the first row). */
+export function noteBox(n: { id: string; step: number; length: number }, rowIndex: number, px: number): NoteBox {
+  return { id: n.id, x: n.step * px + 1, y: rowIndex * ROW_H + NOTE_INSET, w: Math.max(MIN_NOTE_W, n.length * px - 2), h: ROW_H - 2 * NOTE_INSET };
+}
+
+/** Distance from a point to a box (0 inside). */
+export function distToBox(b: NoteBox, x: number, y: number): number {
+  const dx = Math.max(b.x - x, 0, x - (b.x + b.w));
+  const dy = Math.max(b.y - y, 0, y - (b.y + b.h));
+  return Math.hypot(dx, dy);
+}
+
+/** Id of the note whose box is nearest the point, if within `radius` px; ties go to the closer centre. */
+export function nearestNote(boxes: readonly NoteBox[], x: number, y: number, radius = HIT_RADIUS): string | null {
+  let best: { id: string; d: number; c: number } | null = null;
+  for (const b of boxes) {
+    const d = distToBox(b, x, y);
+    if (d > radius) continue;
+    const c = Math.hypot(b.x + b.w / 2 - x, b.y + b.h / 2 - y);
+    if (!best || d < best.d || (d === best.d && c < best.c)) best = { id: b.id, d, c };
+  }
+  return best ? best.id : null;
 }

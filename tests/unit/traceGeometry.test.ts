@@ -83,7 +83,7 @@ describe('snapping', () => {
 describe('roll geometry helpers', () => {
   it('scales and exposes the step mapper', () => {
     expect(pxPerStep({ timing: 'grid' }, 1)).toBe(24);
-    expect(pxPerStep({ timing: 'free' }, 2)).toBeCloseTo(3.2);
+    expect(pxPerStep({ timing: 'free' }, 2)).toBeCloseTo(4.8);
     setRollStepX(2);
     expect(getRollStepX()(10)).toBe(60);
   });

@@ -139,3 +139,39 @@ export function snapEnd(rawEnd: number, unit: number, bounds: readonly number[],
   const b = nearestBound(rawEnd, bounds, tol);
   return b !== null ? Math.round(b) : Math.round(rawEnd / unit) * unit;
 }
+
+/** Distance from point p to segment ab. */
+function distToSeg(px: number, py: number, ax: number, ay: number, bx: number, by: number): number {
+  const vx = bx - ax;
+  const vy = by - ay;
+  const l2 = vx * vx + vy * vy;
+  const t = l2 === 0 ? 0 : Math.max(0, Math.min(1, ((px - ax) * vx + (py - ay) * vy) / l2));
+  return Math.hypot(px - (ax + t * vx), py - (ay + t * vy));
+}
+
+/**
+ * The unclaimed trace segment drawn within `radius` px of a point (grid px: x from step 0, y from the first row),
+ * as a note-sized span. `rowPos` maps a fractional midi to a row position (0 = centre of the top row).
+ */
+export function unclaimedSpanNear(
+  r: Pick<Riff, 'notes' | 'trace' | 'timing' | 'bpm'>,
+  rowPos: (midi: number) => number,
+  px: number,
+  rowH: number,
+  x: number,
+  y: number,
+  radius: number,
+): SegmentSpan | null {
+  if (!r.trace) return null;
+  const hopTicks = r.trace.hop / stepSeconds(r);
+  let best: { s: SegmentSpan; d: number } | null = null;
+  for (const seg of traceSegments(r)) {
+    if (seg.claimed || seg.points.length === 0) continue;
+    const pts = seg.points.map((p) => ({ x: p.x * px, y: (rowPos(p.y) + 0.5) * rowH }));
+    let d = Infinity;
+    if (pts.length === 1) d = Math.hypot(x - pts[0]!.x, y - pts[0]!.y);
+    for (let i = 1; i < pts.length; i++) d = Math.min(d, distToSeg(x, y, pts[i - 1]!.x, pts[i - 1]!.y, pts[i]!.x, pts[i]!.y));
+    if (d <= radius && (!best || d < best.d)) best = { s: segmentSpan(seg, hopTicks), d };
+  }
+  return best ? best.s : null;
+}
