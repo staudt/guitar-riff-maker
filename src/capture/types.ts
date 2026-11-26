@@ -24,6 +24,8 @@ export type Transcription = {
   notes: RawNote[];
   /** True if Basic Pitch produced the notes; false if the live tracker was the fallback. */
   model: boolean;
+  /** The pitch line the notes were cut from (same time base as `notes`); stored with the riff. */
+  trace?: { hop: number; start: number; midi: (number | null)[] };
 };
 
 export type GridSize = 8 | 16;

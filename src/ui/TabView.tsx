@@ -2,9 +2,9 @@
 import './views.css';
 import { selection, riff } from '../model/store';
 import { fingering } from '../model/fingering';
-import { layoutTab } from '../music/tab';
+import { layoutTab, layoutTabSequence } from '../music/tab';
 import { stringName } from '../music/tuning';
-import { totalSteps } from '../model/riff';
+import { isFree, totalSteps } from '../model/riff';
 
 const COL_W = 22;
 const COL_W_WIDE = 30;
@@ -33,7 +33,8 @@ export function TabView({ mode = 'edit', onSelectNote }: TabViewProps) {
   const sel = selection.value;
   const n = r.tuning.strings.length;
   const total = totalSteps(r);
-  const cols = layoutTab({ notes: r.notes, pos: fg.pos, strings: n, totalSteps: total, grid: r.grid });
+  const free = isFree(r);
+  const cols = (free ? layoutTabSequence : layoutTab)({ notes: r.notes, pos: fg.pos, strings: n, totalSteps: total, grid: r.grid });
 
   // Column geometry.
   const widths = cols.map((c) => (c.cells.some((s) => s !== null && s.length > 1) ? COL_W_WIDE : COL_W));
@@ -47,15 +48,17 @@ export function TabView({ mode = 'edit', onSelectNote }: TabViewProps) {
   const width = endX + PAD_R;
   const centers = cols.map((_, i) => starts[i]! + widths[i]! / 2);
   const unitW = r.grid === 8 ? COL_W / 2 : COL_W;
+  // Free sequence layout: interpolate between note columns only (spacers have no step of their own).
+  const anchors = cols.map((c, i) => ({ c, i })).filter((a) => !free || a.c.noteIndex !== null);
   stepX = (step: number) => {
-    if (!cols.length) return PAD_L;
-    let i = 0;
-    while (i + 1 < cols.length && cols[i + 1]!.step <= step) i++;
-    const c = cols[i]!;
-    const next = cols[i + 1];
-    const cx = centers[i]!;
-    if (next) return cx + ((step - c.step) / (next.step - c.step)) * (centers[i + 1]! - cx);
-    return cx + (step - c.step) * unitW;
+    if (!anchors.length) return PAD_L;
+    let k = 0;
+    while (k + 1 < anchors.length && anchors[k + 1]!.c.step <= step) k++;
+    const a = anchors[k]!;
+    const b = anchors[k + 1];
+    const cx = centers[a.i]!;
+    if (b) return cx + ((step - a.c.step) / (b.c.step - a.c.step)) * (centers[b.i]! - cx);
+    return cx + (free ? 0 : (step - a.c.step) * unitW);
   };
 
   const lineY = (row: number) => TOP + row * ROW_H;
@@ -77,13 +80,14 @@ export function TabView({ mode = 'edit', onSelectNote }: TabViewProps) {
               <line key={row} class="tab__line" x1={PAD_L} x2={endX} y1={lineY(row)} y2={lineY(row)} />
             ))}
             {cols.map((c, i) =>
-              c.barline ? (
+              c.barline && !free ? (
                 <line key={`b${i}`} class="tab__bar" x1={starts[i]} x2={starts[i]} y1={lineY(0)} y2={lineY(n - 1)} />
               ) : null,
             )}
+            {free && <line class="tab__bar" x1={PAD_L} x2={PAD_L} y1={lineY(0)} y2={lineY(n - 1)} />}
             <line class="tab__bar" x1={endX} x2={endX} y1={lineY(0)} y2={lineY(n - 1)} />
             {cols.map((c, i) =>
-              c.step % 4 === 0 ? (
+              !free && c.step % 4 === 0 ? (
                 <line key={`t${i}`} class={c.step % 16 === 0 ? 'tab__tick tab__tick--bar' : 'tab__tick'} x1={centers[i]} x2={centers[i]} y1={tickY} y2={tickY + (c.step % 16 === 0 ? 8 : 5)} />
               ) : null,
             )}

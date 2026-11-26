@@ -17,6 +17,29 @@ export type RiffNote = {
   velocity: number;
   /** User-chosen place on the neck; overrides automatic fingering for this note. */
   pin?: Pos;
+  /**
+   * Where this note came from in the recorded trace (free timing). The trace segment
+   * [src.step, src.step+src.length) is drawn translated by (step - src.step, midi - src.midi),
+   * so moving/re-pitching the note drags its piece of the recorded line along.
+   */
+  src?: { step: number; length: number; midi: number };
+};
+
+/**
+ * 'grid': steps are 16th notes at `bpm` (bars, metronome, count-in apply).
+ * 'free': steps are fixed TICK_MS ticks of real time (no tempo; the take's own timing). Length = `span`.
+ */
+export type Timing = 'grid' | 'free';
+export const TICK_MS = 10;
+
+/** The recorded pitch line, kept with the riff so the editor can draw it under the notes. */
+export type Trace = {
+  /** Seconds between points. */
+  hop: number;
+  /** Riff time (seconds) of point 0. Riff time 0 = step 0. */
+  start: number;
+  /** Fractional MIDI pitch per point, null where unvoiced. */
+  midi: (number | null)[];
 };
 
 export type PowerMode = 'off' | 'r5' | 'r58';
@@ -33,10 +56,14 @@ export type Riff = {
   name: string;
   createdAt: number;
   updatedAt: number;
+  timing: Timing;
+  /** Grid timing: tempo. Free timing: unused for playback (only a hint for "snap to beat"). */
   bpm: number;
   timeSig: [4, 4];
   grid: GridSize;
   bars: Bars;
+  /** Free timing: riff length in ticks (notes live in [0, span)). Ignored for grid timing. */
+  span: number;
   key: { tonic: PitchClass; scale: ScaleName };
   tuning: Tuning;
   maxFret: number;
@@ -48,10 +75,21 @@ export type Riff = {
   notes: RiffNote[];
   /** The raw detected notes + capture tempo, so re-quantizing to another grid is lossless. */
   capture?: { raw: CapturedNote[]; bpm: number };
+  /** Free timing: the recorded pitch line. */
+  trace?: Trace;
 };
 
 export const STEPS_PER_BAR = 16;
-export const totalSteps = (r: Pick<Riff, 'bars'>) => r.bars * STEPS_PER_BAR;
+export const MAX_SPAN = 60_000 / TICK_MS; // 60 s
+export const isFree = (r: Pick<Riff, 'timing'>) => r.timing === 'free';
+export const totalSteps = (r: Pick<Riff, 'bars' | 'timing' | 'span'>) =>
+  r.timing === 'free' ? r.span : r.bars * STEPS_PER_BAR;
+/** Seconds per step at normal speed. */
+export const stepSeconds = (r: Pick<Riff, 'timing' | 'bpm'>) => (r.timing === 'free' ? TICK_MS / 1000 : 60 / r.bpm / 4);
+/** The tempo the engine needs so one step lasts stepSeconds(r) (free: 1500 "bpm" = 10 ms steps). */
+export const engineBpm = (r: Pick<Riff, 'timing' | 'bpm'>) => 60 / (stepSeconds(r) * 4);
+/** Default edit unit in steps: grid -> one grid cell; free -> 50 ms. */
+export const editUnit = (r: Pick<Riff, 'timing' | 'grid'>) => (r.timing === 'free' ? 5 : r.grid === 8 ? 2 : 1);
 
 // ---------------------------------------------------------------------------------------------
 // Functions
@@ -79,6 +117,8 @@ export function newRiff(partial: Partial<Riff> = {}): Riff {
     timeSig: [4, 4],
     grid: 16,
     bars: 2,
+    timing: 'grid',
+    span: 400,
     key: { tonic: 9, scale: 'minor' },
     tuning: { name: DEFAULT_TUNING.name, strings: [...DEFAULT_TUNING.strings] },
     maxFret: 22,
@@ -140,6 +180,7 @@ const NoteSchema = z.object({
   midi: z.number(),
   velocity: z.number(),
   pin: PosSchema.optional(),
+  src: z.object({ step: z.number(), length: z.number(), midi: z.number() }).optional(),
 });
 
 export const RiffSchema = z.object({
@@ -148,10 +189,12 @@ export const RiffSchema = z.object({
   name: z.string(),
   createdAt: z.number(),
   updatedAt: z.number(),
+  timing: z.enum(['grid', 'free']).default('grid'),
   bpm: z.number().min(1),
   timeSig: z.tuple([z.literal(4), z.literal(4)]),
   grid: z.union([z.literal(8), z.literal(16)]),
   bars: z.number().int().min(1).max(MAX_BARS),
+  span: z.number().int().min(1).max(MAX_SPAN).default(400),
   key: z.object({
     tonic: z.number().int().min(0).max(11),
     scale: z.enum(['minor', 'major', 'dorian', 'mixolydian', 'pentatonic']),
@@ -171,6 +214,7 @@ export const RiffSchema = z.object({
       bpm: z.number(),
     })
     .optional(),
+  trace: z.object({ hop: z.number().positive(), start: z.number(), midi: z.array(z.number().nullable()) }).optional(),
 });
 
 /** Upgrades older stored shapes to the current one. Only v1 exists, so this is a pass-through. */

@@ -28,7 +28,7 @@ export function RiffHeader() {
       <button class="riff-header__title" data-testid="riff-name" onClick={rename}>
         <span class="riff-header__name">{r.name}</span>
         <span class="riff-header__meta" data-testid="riff-meta">
-          {pcName(r.key.tonic, false)} {SCALE_LABEL[r.key.scale] ?? r.key.scale} · ♩={r.bpm}
+          {pcName(r.key.tonic, false)} {SCALE_LABEL[r.key.scale] ?? r.key.scale} · {r.timing === 'free' ? 'free time' : `♩=${r.bpm}`}
         </span>
       </button>
       <Segmented

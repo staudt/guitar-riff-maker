@@ -1,8 +1,12 @@
 // Pure riff editing: `reduce(riff, action)` returns a normalized riff. It never touches updatedAt (the store does).
+import { autoQuantize } from '../capture/tempo';
 import { inScale, SCALES } from '../music/theory';
 import type { Midi, PitchClass, Pos, ScaleName, Tuning } from '../music/types';
 import {
+  editUnit,
+  isFree,
   MAX_BARS,
+  MAX_SPAN,
   newId,
   normalize,
   totalSteps,
@@ -17,7 +21,7 @@ import {
 } from './riff';
 
 export type Action =
-  | { type: 'add'; step: number; midi: Midi; length?: number; velocity?: number; id?: string }
+  | { type: 'add'; step: number; midi: Midi; length?: number; velocity?: number; id?: string; src?: RiffNote['src'] }
   | { type: 'delete'; ids: string[] }
   | { type: 'move'; id: string; step: number }
   | { type: 'resize'; id: string; length: number }
@@ -37,6 +41,8 @@ export type Action =
   | { type: 'fixOutOfKey' }
   | { type: 'setBpm'; bpm: number }
   | { type: 'setBars'; bars: Bars }
+  | { type: 'setSpan'; span: number }
+  | { type: 'snapToBeat' }
   | { type: 'pin'; id: string; pos: Pos }
   | { type: 'unpin'; id: string }
   | { type: 'setRegion'; region: Region }
@@ -158,20 +164,37 @@ function rescale(r: Riff, factor: number, bars: number): Riff {
   };
 }
 
+/** Free -> grid: fit the notes to a steady tempo (autoQuantize), keeping ids/pins when notes map one-to-one. */
+function snapToBeat(r: Riff): Riff {
+  const raw = r.notes.map((n) => ({ start: n.step * 0.01, end: (n.step + n.length) * 0.01, midi: n.midi, velocity: n.velocity }));
+  const q = autoQuantize(raw, {});
+  const one = q.notes.length === r.notes.length;
+  const notes: RiffNote[] = q.notes.map((g, i) => {
+    const old = one ? r.notes[i] : undefined;
+    const { src: _src, ...rest } = old ?? ({} as Partial<RiffNote>);
+    return { ...rest, id: old?.id ?? newId(), step: g.step, length: g.length, midi: old?.midi ?? g.midi, velocity: old?.velocity ?? g.velocity };
+  });
+  const { capture: _capture, ...base } = r;
+  const out: Riff = { ...base, timing: 'grid', bpm: clamp(Math.round(q.bpm), 30, 300), grid: q.grid, bars: clamp(q.bars, 1, MAX_BARS), notes };
+  if (r.trace) out.trace = { ...r.trace, start: r.trace.start - q.offset };
+  return out;
+}
+
 export function reduce(riff: Riff, a: Action): Riff {
   return normalize(apply(riff, a));
 }
 
 function apply(r: Riff, a: Action): Riff {
-  const u = gridUnit(r.grid);
+  const u = editUnit(r);
   const total = totalSteps(r);
+  const free = isFree(r);
   switch (a.type) {
     case 'add':
       return {
         ...r,
         notes: [
           ...r.notes,
-          { id: a.id ?? newId(), step: a.step, midi: a.midi, length: a.length ?? u, velocity: a.velocity ?? 100 },
+          { id: a.id ?? newId(), step: a.step, midi: a.midi, length: a.length ?? u, velocity: a.velocity ?? 100, ...(a.src ? { src: { ...a.src } } : {}) },
         ],
       };
     case 'delete': {
@@ -208,10 +231,16 @@ function apply(r: Riff, a: Action): Riff {
     case 'split': {
       const n = r.notes.find((x) => x.id === a.id);
       if (!n || n.length < 2) return r;
-      const mid = Math.round((n.step + n.length / 2) / u) * u;
+      const mid = free ? n.step + Math.floor(n.length / 2) : Math.round((n.step + n.length / 2) / u) * u;
       const at = clamp(mid, n.step + 1, n.step + n.length - 1);
-      const second: RiffNote = { ...n, id: a.newId ?? newId(), step: at, length: n.step + n.length - at };
-      return { ...r, notes: [...r.notes.map((x) => (x.id === n.id ? { ...n, length: at - n.step } : x)), second] };
+      const half = at - n.step;
+      let first: RiffNote = { ...n, length: half };
+      let second: RiffNote = { ...n, id: a.newId ?? newId(), step: at, length: n.step + n.length - at };
+      if (free && n.src) {
+        first = { ...first, src: { step: n.src.step, length: half, midi: n.src.midi } };
+        second = { ...second, src: { step: n.src.step + half, length: Math.max(1, n.src.length - half), midi: n.src.midi } };
+      }
+      return { ...r, notes: [...r.notes.map((x) => (x.id === n.id ? first : x)), second] };
     }
     case 'merge': {
       const sorted = [...r.notes].sort((x, y) => x.step - y.step);
@@ -220,18 +249,26 @@ function apply(r: Riff, a: Action): Riff {
       const next = sorted[i + 1];
       if (!n || !next) return r;
       const end = next.step + next.length;
-      return { ...r, notes: r.notes.filter((x) => x.id !== next.id).map((x) => (x.id === n.id ? { ...n, length: end - n.step } : x)) };
+      let merged: RiffNote = { ...n, length: end - n.step };
+      if (free && n.src && next.src && n.src.step + n.src.length === next.src.step) {
+        merged = { ...merged, src: { ...n.src, length: next.src.step + next.src.length - n.src.step } };
+      }
+      return { ...r, notes: r.notes.filter((x) => x.id !== next.id).map((x) => (x.id === n.id ? merged : x)) };
     }
     case 'setGrid':
+      if (free) return r;
       return { ...r, grid: a.grid };
     case 'requantize': {
+      if (free) return r;
       const base = { ...r, grid: a.grid };
       if (r.capture) return { ...base, notes: quantizeRaw(r.capture.raw, r.capture.bpm, a.grid, total) };
       return { ...base, notes: snapExisting(r.notes, a.grid) };
     }
     case 'halfTime':
+      if (free) return r;
       return rescale(r, 2, Math.min(MAX_BARS, r.bars * 2));
     case 'doubleTime':
+      if (free) return r;
       return rescale(r, 0.5, Math.max(1, Math.ceil(r.bars / 2)));
     case 'transpose':
       return transposeAll(r, a.semis);
@@ -258,9 +295,16 @@ function apply(r: Riff, a: Action): Riff {
         }),
       };
     case 'setBpm':
+      if (free) return r;
       return { ...r, bpm: clamp(Math.round(a.bpm), 30, 300) };
     case 'setBars':
+      if (free) return r;
       return { ...r, bars: clamp(Math.round(a.bars), 1, MAX_BARS) };
+    case 'setSpan':
+      if (!free) return r;
+      return { ...r, span: clamp(Math.round(a.span), 1, MAX_SPAN) };
+    case 'snapToBeat':
+      return free ? snapToBeat(r) : r;
     case 'pin':
       return mapNote(r, a.id, (n) => ({ ...n, pin: { ...a.pos } }));
     case 'unpin':

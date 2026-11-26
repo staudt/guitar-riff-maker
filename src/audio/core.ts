@@ -135,7 +135,7 @@ export class Engine {
         this.fixCursor();
         break;
       case 'tempo': {
-        const bpm = Math.max(20, Math.min(400, cmd.bpm));
+        const bpm = Math.max(20, Math.min(2000, cmd.bpm)); // free timing runs 10 ms steps = 1500
         const rate = Math.max(0.1, Math.min(2, cmd.rate));
         if (this.playing && !this.pendingStart) {
           const pos = this.posAt(this.nextFrame);

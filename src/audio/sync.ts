@@ -2,7 +2,7 @@
 // The engine only hears about changes; it owns all timing.
 import { effect, signal } from '@preact/signals';
 import type { Riff } from '../model/riff';
-import { totalSteps } from '../model/riff';
+import { engineBpm, isFree, totalSteps } from '../model/riff';
 import { riff } from '../model/store';
 import { expand } from '../music/powerchord';
 import { setAuditioner } from '../ui/audition';
@@ -30,10 +30,10 @@ export function riffToNotes(r: Riff): PNote[] {
 export function riffToCommands(r: Riff, opts: { rate: number; loop: { start: number; end: number }; metronome: boolean }): Cmd[] {
   return [
     { type: 'riff', notes: riffToNotes(r), totalSteps: totalSteps(r) },
-    { type: 'tempo', bpm: r.bpm, rate: opts.rate },
+    { type: 'tempo', bpm: engineBpm(r), rate: opts.rate },
     { type: 'loop', start: opts.loop.start, end: opts.loop.end },
     { type: 'instrument', kind: r.instrument },
-    { type: 'metronome', on: opts.metronome, gain: 0.6 },
+    { type: 'metronome', on: opts.metronome && !isFree(r), gain: 0.6 },
   ];
 }
 
@@ -46,10 +46,11 @@ export function startAudio(): Promise<void> {
     await ensureRunning();
     await initEngine();
     effect(() => send({ type: 'riff', notes: riffToNotes(riff.value), totalSteps: totalSteps(riff.value) }));
-    effect(() => send({ type: 'tempo', bpm: riff.value.bpm, rate: rate.value }));
+    effect(() => send({ type: 'tempo', bpm: engineBpm(riff.value), rate: rate.value }));
     effect(() => send({ type: 'loop', start: loop.value.start, end: loop.value.end }));
     effect(() => send({ type: 'instrument', kind: riff.value.instrument }));
-    effect(() => send({ type: 'metronome', on: metronomeOn.value, gain: 0.6 }));
+    // Free timing has no beat: never click.
+    effect(() => send({ type: 'metronome', on: metronomeOn.value && !isFree(riff.value), gain: 0.6 }));
   })();
   return started;
 }
@@ -63,7 +64,8 @@ setAuditioner((midis, vel, seconds) => {
 
 export async function play(from = 0, countIn = true): Promise<void> {
   await startAudio();
-  send({ type: 'play', from, countInBeats: countIn ? 4 : 0 });
+  // Count-in beats are 4 steps each: meaningless (40 ms) in free timing.
+  send({ type: 'play', from, countInBeats: countIn && !isFree(riff.value) ? 4 : 0 });
   playing.value = true;
 }
 

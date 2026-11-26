@@ -7,12 +7,14 @@ import { fingering } from '../model/fingering';
 import { nextIndex } from '../model/lesson';
 import { riff } from '../model/store';
 import { getTabStepX } from './TabView';
+import { getRollStepX } from './rollGeometry';
 import { neckPoint } from './NeckView';
 
 /** Count-in beat 1..4 while counting in, else null. */
 export const countInBeat = signal<number | null>(null);
 
-const ROLL_STEP_PX = 24;
+const ROLL_LABEL_W = 40; // keep in sync with rollGeometry LABEL_W (the playhead's CSS left offset)
+let lastRollScroll = 0;
 const MARKED = '[data-note-index],[data-note-indexes]';
 
 let curActive = -1;
@@ -130,8 +132,23 @@ function showPlayheads(step: number): void {
   const roll = document.querySelector<HTMLElement>('[data-playhead]');
   if (roll) {
     roll.style.display = 'block';
-    roll.style.transform = `translateX(${step * ROLL_STEP_PX}px)`;
+    const x = getRollStepX()(step);
+    roll.style.transform = `translateX(${x - ROLL_LABEL_W}px)`;
+    followRoll(x);
   }
+}
+
+/** Keep the roll's playhead on screen while playing; smooth, and not more often than every 350 ms. */
+function followRoll(x: number): void {
+  const sc = document.querySelector<HTMLElement>('.roll__scroller');
+  if (!sc || sc.clientWidth === 0) return;
+  const left = sc.scrollLeft + ROLL_LABEL_W;
+  const right = sc.scrollLeft + sc.clientWidth - 24;
+  if (x >= left && x <= right) return;
+  const now = performance.now();
+  if (now - lastRollScroll < 350) return;
+  lastRollScroll = now;
+  sc.scrollTo?.({ left: Math.max(0, x - ROLL_LABEL_W - sc.clientWidth / 4), behavior: 'smooth' });
 }
 
 function hidePlayheads(): void {

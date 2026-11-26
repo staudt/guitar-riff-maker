@@ -48,9 +48,39 @@ export function layoutTab(input: TabInput): TabColumn[] {
     });
 }
 
+/** Silence (ms) before a note that earns 1, 2, 3 spacer columns in sequence layout. */
+const SPACER_MS = [150, 400, 900] as const;
+
+/**
+ * Free-timing layout: one column per note, plus 0-3 empty spacer columns before a note depending on the
+ * gap since the previous note ended (step = 10 ms ticks). Only the first column carries a barline.
+ */
+export function layoutTabSequence(input: TabInput, tickMs = 10): TabColumn[] {
+  const out: TabColumn[] = [];
+  let prevEnd = 0;
+  const blank = () => new Array<string | null>(input.strings).fill(null);
+  input.notes.forEach((n, i) => {
+    if (n.step < 0 || n.step >= input.totalSteps) return;
+    const gapMs = (n.step - prevEnd) * tickMs;
+    const spacers = SPACER_MS.filter((t) => gapMs >= t).length;
+    for (let k = 0; k < spacers; k++) out.push({ step: prevEnd, cells: blank(), noteIndex: null, barline: false });
+    const cells = blank();
+    for (const p of input.pos[i] ?? []) {
+      if (p.string < 0 || p.string >= input.strings) continue;
+      cells[input.strings - 1 - p.string] = p.fret < 0 ? 'x' : String(p.fret);
+    }
+    out.push({ step: n.step, cells, noteIndex: i, barline: false });
+    prevEnd = n.step + n.length;
+  });
+  if (out.length === 0) out.push({ step: 0, cells: blank(), noteIndex: null, barline: true });
+  else out[0] = { ...out[0]!, barline: true };
+  return out;
+}
+
 /** ASCII tab: header line then one line per string (highest first), wrapped every `barsPerLine` bars. */
-export function renderTabText(header: string, cols: readonly TabColumn[], stringNames: readonly string[], opts?: { barsPerLine?: number }): string {
-  const perLine = opts?.barsPerLine ?? 2;
+export function renderTabText(header: string, cols: readonly TabColumn[], stringNames: readonly string[], opts?: { barsPerLine?: number; colsPerLine?: number }): string {
+  const colsPerLine = opts?.colsPerLine;
+  const perLine = colsPerLine ? 1 : (opts?.barsPerLine ?? 2);
   let width = 1;
   for (const c of cols) for (const cell of c.cells) if (cell) width = Math.max(width, cell.length);
   const nStr = stringNames.length;
@@ -58,7 +88,7 @@ export function renderTabText(header: string, cols: readonly TabColumn[], string
   // Split into bars.
   const bars: TabColumn[][] = [];
   for (const c of cols) {
-    if (c.barline || bars.length === 0) bars.push([]);
+    if (colsPerLine ? (bars[bars.length - 1]?.length ?? colsPerLine) >= colsPerLine : c.barline || bars.length === 0) bars.push([]);
     bars[bars.length - 1]!.push(c);
   }
   const systems: string[] = [];

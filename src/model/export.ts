@@ -1,9 +1,9 @@
 // Text, JSON and share/download export of a riff. Formatting is pure; only shareTab touches the browser.
-import { layoutTab, renderTabText } from '../music/tab';
+import { layoutTab, layoutTabSequence, renderTabText } from '../music/tab';
 import { pcName } from '../music/theory';
 import { stringName } from '../music/tuning';
 import { fingeringFor } from './fingering';
-import { newId, parseRiff, totalSteps, type Riff } from './riff';
+import { isFree, newId, parseRiff, totalSteps, type Riff } from './riff';
 
 const POWER_LABEL: Record<Exclude<Riff['power'], 'off'>, string> = { r5: '5', r58: '5 & 8' };
 
@@ -12,9 +12,10 @@ const POWER_LABEL: Record<Exclude<Riff['power'], 'off'>, string> = { r5: '5', r5
  * followed by the ASCII tab in the riff's current fingering.
  */
 export function tabText(riff: Riff): string {
-  const title = `${riff.name} — ${pcName(riff.key.tonic, false)} ${riff.key.scale} — ${Math.round(riff.bpm)} bpm — ${riff.tuning.name}`;
+  const title = `${riff.name} — ${pcName(riff.key.tonic, false)} ${riff.key.scale} — ${isFree(riff) ? 'free time' : `${Math.round(riff.bpm)} bpm`} — ${riff.tuning.name}`;
   const header = riff.power === 'off' ? title : `${title}\nPower chords (${POWER_LABEL[riff.power]})`;
-  const cols = layoutTab({
+  const free = isFree(riff);
+  const cols = (free ? layoutTabSequence : layoutTab)({
     notes: riff.notes.map((n) => ({ step: n.step, length: n.length })),
     pos: fingeringFor(riff).pos,
     strings: riff.tuning.strings.length,
@@ -22,7 +23,7 @@ export function tabText(riff: Riff): string {
     grid: riff.grid,
   });
   const names = riff.tuning.strings.map((_, i) => stringName(riff.tuning, i));
-  return renderTabText(header, cols, names);
+  return renderTabText(header, cols, names, free ? { colsPerLine: 24 } : undefined);
 }
 
 export function exportJson(riff: Riff): string {

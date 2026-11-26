@@ -8,9 +8,11 @@ import { getLatencyMs, scheduleClick } from '../platform/latency';
 import { MAX_RECORD_SECONDS, MicError } from '../platform/recorder';
 import { play, stop as stopPlayback } from '../audio/sync';
 import { startLive, type LiveSession } from './live';
-import { transcribe } from './transcribe';
-import { toRiff } from './toRiff';
-import type { CaptureSource, RawNote, Transcription } from './types';
+import { trackPitch } from './pitch';
+import { segmentNotes } from './notes';
+import { buildFree, frameTrace, toRiff, toRiffFree } from './toRiff';
+import type { Riff } from '../model/riff';
+import type { CaptureSource, PitchFrame, RawNote } from './types';
 
 export type Phase = 'idle' | 'countin' | 'recording' | 'analyzing' | 'done' | 'error';
 export type CaptureOptions = { source: 'whistle' | 'voice'; metronome: boolean; bpm: number };
@@ -68,6 +70,8 @@ export type Run = {
   voiced: number;
   /** Frame time (s) of the last voiced frame. */
   lastVoiced: number;
+  /** Seconds (live-frame time base) at which recording stopped; the trace freezes there while analyzing. */
+  endT: number | null;
 };
 let run: Run | null = null;
 let raf = 0;
@@ -134,7 +138,7 @@ export async function start(): Promise<void> {
       const total = countBars * 4 + Math.ceil((MAX_TAKE_S + 1) / beatS);
       for (let k = 0; k < total; k++) clicks.push(scheduleClick(ctx, clicksStart + k * beatS, k % 4 === 0));
     }
-    run = { live, ctx, clicks, metronome: o.metronome, beatS, tBar1, offset, source: o.source, finishing: false, scanned: 0, voiced: 0, lastVoiced: 0 };
+    run = { live, ctx, clicks, metronome: o.metronome, beatS, tBar1, offset, source: o.source, finishing: false, scanned: 0, voiced: 0, lastVoiced: 0, endT: null };
     phase.value = o.metronome && tBar1 > ctx.currentTime ? 'countin' : 'recording';
     cancelAnimationFrame(raf);
     raf = requestAnimationFrame(tick);
@@ -165,12 +169,29 @@ async function finish(abort: boolean): Promise<void> {
     phase.value = 'idle';
     return;
   }
+  r.endT = Math.max(0, r.ctx.currentTime - r.live.startTime);
   phase.value = 'analyzing';
   progress.value = 0;
   try {
     const audio = await r.live.stop();
-    const tr = await transcribe(audio.l, audio.rate, r.source, { offset: r.offset, onProgress: (p) => { progress.value = p; } });
-    handOff(tr, r.metronome ? options.value.bpm : undefined, true);
+    // Let the "Analyzing" state paint, then run the same YIN tracker as the live line over the whole take.
+    await new Promise<void>((res) => setTimeout(res, 30));
+    const frames = trackPitch(audio.l, audio.rate, r.source);
+    progress.value = 1;
+    const cur = riff.peek();
+    const o = {
+      power: cur.power, tuningLow: cur.tuning.strings[0] ?? 40,
+      base: { tuning: cur.tuning, maxFret: cur.maxFret, instrument: cur.instrument },
+    };
+    if (r.metronome) {
+      // Same line and notes, but snapped to the click: times are shifted so 0 = first bar.
+      const trace = frameTrace(frames);
+      const notes = segmentNotes(frames).map((n) => ({ ...n, start: n.start - r.offset, end: n.end - r.offset }));
+      handOff(notes.length ? toRiff({ source: r.source, model: false, notes, ...(trace ? { trace: { ...trace, start: trace.start - r.offset } } : {}) }, { ...o, hintBpm: options.value.bpm }) : null, true);
+    } else {
+      const notes = segmentNotes(frames);
+      handOff(notes.length ? toRiffFree(frames as PitchFrame[], o, notes) : null, true);
+    }
   } catch (e) {
     error.value = micMessage(e);
     phase.value = 'error';
@@ -179,18 +200,13 @@ async function finish(abort: boolean): Promise<void> {
   }
 }
 
-/** Builds the riff from a transcription, opens it in the editor and (optionally) plays it back. Shared by the test hook. */
-function handOff(tr: Transcription, hintBpm: number | undefined, autoplay: boolean): void {
-  if (tr.notes.length === 0) {
+/** Opens a built riff in the editor and (optionally) plays it back. Shared by the test hook. */
+function handOff(built: Riff | null, autoplay: boolean): void {
+  if (!built) {
     error.value = 'No notes heard. Whistle or hum a little louder and closer to the microphone, then try again.';
     phase.value = 'error';
     return;
   }
-  const cur = riff.peek();
-  const built = toRiff(tr, {
-    hintBpm, power: cur.power, tuningLow: cur.tuning.strings[0] ?? 40,
-    base: { tuning: cur.tuning, maxFret: cur.maxFret, instrument: cur.instrument },
-  });
   loadRiff(built);
   riffMode.value = 'edit';
   screen.value = 'riff';
@@ -205,13 +221,28 @@ export function leave(): void {
   error.value = '';
 }
 
-// Test builds: skip the mic and feed notes (seconds from the start) straight into the riff builder.
+// Test builds: skip the mic. place() feeds notes (seconds from the start) straight into the riff
+// builder (free timing, no trace; with a bpm it uses the grid path); placeAudio() runs the whole
+// analysis (YIN -> notes -> free riff with trace) on audio samples.
 if (import.meta.env.MODE === 'test' && typeof window !== 'undefined') {
+  const opts = () => {
+    const cur = riff.peek();
+    return { power: cur.power, tuningLow: cur.tuning.strings[0] ?? 40, base: { tuning: cur.tuning, maxFret: cur.maxFret, instrument: cur.instrument } };
+  };
   (window as unknown as { __capture: unknown }).__capture = {
     phase: () => phase.value,
+    debug: () => (run ? { voiced: run.voiced, lastVoiced: run.lastVoiced, sinceStart: run.ctx.currentTime - run.live.startTime, frames: run.live.frames.length, last: run.live.frames.slice(-3) } : null),
     options: () => options.value,
     place(notes: RawNote[], bpm?: number) {
-      handOff({ source: 'whistle', model: false, notes }, bpm, false);
+      handOff(
+        notes.length === 0 ? null : bpm ? toRiff({ source: 'whistle', model: false, notes }, { ...opts(), hintBpm: bpm }) : buildFree(notes, null, opts()),
+        false,
+      );
+    },
+    placeAudio(audio: Float32Array, rate: number, source: CaptureSource = 'whistle') {
+      const frames = trackPitch(audio, rate, source);
+      const notes = segmentNotes(frames);
+      handOff(notes.length ? toRiffFree(frames, opts(), notes) : null, false);
     },
   };
 }

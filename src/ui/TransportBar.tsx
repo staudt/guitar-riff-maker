@@ -4,7 +4,7 @@ import { loop, metronomeOn, rate } from '../audio/sync';
 import { countIn, metronome, setSetting } from '../app/settings';
 import { riff, selection } from '../model/store';
 import { lessonMode, type LessonMode } from '../model/lesson';
-import { STEPS_PER_BAR } from '../model/riff';
+import { isFree, STEPS_PER_BAR } from '../model/riff';
 
 const RATES = [50, 60, 75, 90, 100];
 
@@ -24,7 +24,8 @@ export function TransportBar() {
   const lp = loop.value;
   const whole = lp.end <= lp.start;
   const sel = selectionRange();
-  const bars = Array.from({ length: r.bars }, (_, i) => i + 1);
+  const free = isFree(r);
+  const bars = free ? [] : Array.from({ length: r.bars }, (_, i) => i + 1);
   const setLoop = (start: number, end: number) => (loop.value = { start, end });
 
   return (
@@ -34,7 +35,7 @@ export function TransportBar() {
           <Chip key={v} label={`${v}%`} active={pct === v} testId={`tempo-${v}`} onPress={() => (rate.value = v / 100)} />
         ))}
         <span class="transport__bpm" data-testid="tempo-bpm">
-          {Math.round(r.bpm * rate.value)} bpm
+          {free ? `${pct}%` : `${Math.round(r.bpm * rate.value)} bpm`}
         </span>
       </div>
       <div class="transport__row transport__tempo">
@@ -71,6 +72,7 @@ export function TransportBar() {
             />
           )}
         </div>
+        {!free && (
         <button
           type="button"
           role="switch"
@@ -83,6 +85,8 @@ export function TransportBar() {
         >
           1·2
         </button>
+        )}
+        {!free && (
         <button
           type="button"
           role="switch"
@@ -99,6 +103,7 @@ export function TransportBar() {
         >
           ♩
         </button>
+        )}
       </div>
       <div class="transport__row">
         <Segmented<LessonMode>

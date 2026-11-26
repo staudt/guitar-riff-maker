@@ -1,4 +1,4 @@
-import { gridUnit } from '../model/edit';
+import { editUnit, isFree, stepSeconds } from '../model/riff';
 import { dispatch, riff, selection } from '../model/store';
 import { midiToNote } from '../music/notation';
 import { Sheet } from './primitives';
@@ -20,7 +20,7 @@ export function NoteSheet(props: NoteSheetProps) {
   const r = riff.value;
   const note = id ? r.notes.find((n) => n.id === id) : undefined;
   const open = !!note;
-  const u = gridUnit(r.grid);
+  const u = editUnit(r);
 
   const heard = () => {
     const n = id ? riff.peek().notes.find((x) => x.id === id) : undefined;
@@ -41,7 +41,13 @@ export function NoteSheet(props: NoteSheetProps) {
     <Sheet
       open={open}
       onClose={onClose}
-      title={note ? `${midiToNote(note.midi)}  ·  step ${note.step + 1} · len ${note.length}` : undefined}
+      title={
+        note
+          ? isFree(r)
+            ? `${midiToNote(note.midi)}  ·  ${(note.step * stepSeconds(r)).toFixed(2)} s · ${Math.round(note.length * stepSeconds(r) * 1000)} ms`
+            : `${midiToNote(note.midi)}  ·  step ${note.step + 1} · len ${note.length}`
+          : undefined
+      }
       testId="note-sheet"
     >
       {note && id ? (

@@ -222,3 +222,60 @@ describe('setup', () => {
     expect(o.notes.every((n) => n.step < 16)).toBe(true);
   });
 });
+
+describe('free timing', () => {
+  const free = () => newRiff({ timing: 'free', span: 400, notes: [
+    { id: 'a', step: 10, length: 21, midi: 60, velocity: 90, src: { step: 10, length: 21, midi: 60 } },
+    { id: 'b', step: 31, length: 10, midi: 62, velocity: 90, src: { step: 31, length: 10, midi: 62 } },
+  ] });
+  it('nudges 5 ticks and add defaults to 5 ticks', () => {
+    expect(reduce(free(), { type: 'nudge', ids: ['a'], dir: 1 }).notes[0]!.step).toBe(15);
+    expect(reduce(free(), { type: 'add', step: 100, midi: 64 }).notes.at(-1)!.length).toBe(5);
+  });
+  it('splits at the exact midpoint with src slices', () => {
+    const out = reduce(free(), { type: 'split', id: 'a', newId: 'a2' });
+    const [x, y] = out.notes;
+    expect([x!.step, x!.length, y!.step, y!.length]).toEqual([10, 10, 20, 11]);
+    expect(x!.src).toEqual({ step: 10, length: 10, midi: 60 });
+    expect(y!.src).toEqual({ step: 20, length: 11, midi: 60 });
+  });
+  it('merge extends contiguous src, move keeps src', () => {
+    const m = reduce(free(), { type: 'merge', id: 'a' });
+    expect(m.notes[0]!.src).toEqual({ step: 10, length: 31, midi: 60 });
+    const mv = reduce(free(), { type: 'move', id: 'a', step: 50 });
+    expect(mv.notes.find((n) => n.id === 'a')!.src!.step).toBe(10);
+  });
+  it('grid-only actions are no-ops', () => {
+    const r = free();
+    for (const a of [{ type: 'setGrid', grid: 8 }, { type: 'requantize', grid: 8 }, { type: 'halfTime' }, { type: 'doubleTime' }, { type: 'setBpm', bpm: 120 }, { type: 'setBars', bars: 4 }] as Action[])
+      expect(reduce(r, a)).toEqual(r);
+  });
+  it('setSpan clamps and drops notes beyond', () => {
+    const out = reduce(free(), { type: 'setSpan', span: 20 });
+    expect(out.span).toBe(20);
+    expect(out.notes).toHaveLength(1);
+    expect(reduce(demoRiff(), { type: 'setSpan', span: 20 }).span).toBe(400);
+  });
+  it('snapToBeat makes a grid riff', () => {
+    // Even 8ths at ~120 bpm (250 ms = 25 ticks).
+    const notes = [0, 1, 2, 3, 4, 5, 6, 7].map((i) => ({ id: `n${i}`, step: i * 25 + 3, length: 22, midi: 57 + (i % 3) * 2, velocity: 90, src: { step: i * 25 + 3, length: 22, midi: 57 } }));
+    const r = newRiff({ timing: 'free', span: 300, notes, trace: { hop: 0.02, start: 0, midi: [60] } });
+    const out = reduce(r, { type: 'snapToBeat' });
+    expect(out.timing).toBe('grid');
+    expect(out.notes.length).toBeGreaterThan(0);
+    expect(out.notes.every((n) => !n.src)).toBe(true);
+    expect(out.bpm).toBeGreaterThanOrEqual(30);
+    expect(out.trace).toBeDefined();
+    assertNormalized(out);
+    expect(reduce(demoRiff(), { type: 'snapToBeat' })).toEqual(demoRiff());
+    expect([60, 120, 240]).toContain(out.bpm); expect(out.notes).toHaveLength(8);
+  });
+});
+
+describe('add keeps trace origin', () => {
+  it('stores src so the added note drags its trace segment', () => {
+    const r = newRiff({ timing: 'free', span: 500 });
+    const out = reduce(r, { type: 'add', step: 40, midi: 57, length: 30, id: 'x', src: { step: 40, length: 30, midi: 57 } });
+    expect(out.notes[0]!.src).toEqual({ step: 40, length: 30, midi: 57 });
+  });
+});

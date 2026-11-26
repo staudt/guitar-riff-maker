@@ -8,6 +8,7 @@ import { countIn } from '../app/settings';
 import { loop, play, playing, rate, stop } from '../audio/sync';
 import { fingering } from '../model/fingering';
 import { lessonIndex, lessonMode, nextIndex, prevIndex } from '../model/lesson';
+import { stepSeconds } from '../model/riff';
 import { riff } from '../model/store';
 import { stringName } from '../music/tuning';
 
@@ -15,8 +16,7 @@ function sound(i: number): void {
   const r = riff.value;
   const n = r.notes[i];
   if (!n) return;
-  const stepSec = 60 / r.bpm / 4;
-  audition([n.midi], n.velocity, (n.length * stepSec) / rate.value);
+  audition([n.midi], n.velocity, (n.length * stepSeconds(r)) / rate.value);
 }
 
 function goto(i: number): void {

@@ -35,6 +35,7 @@ export function RiffSettingsSheet() {
   const r = riff.value;
   const [status, setStatus] = useState('');
   const mode = keyMode.value;
+  const free = r.timing === 'free';
 
   const share = async () => {
     try {
@@ -78,6 +79,8 @@ export function RiffSettingsSheet() {
           onChange={(m) => (keyMode.value = m)}
         />
       </Row>
+      {!free && (
+      <>
       <Row label="Tempo">
         <IconButton label="Slower" glyph="−" onPress={() => dispatch({ type: 'setBpm', bpm: r.bpm - 1 })} testId="tb-bpm-dec" />
         <span class="rs-value" data-testid="tb-bpm">♩ {r.bpm}</span>
@@ -88,6 +91,8 @@ export function RiffSettingsSheet() {
         <span class="rs-value" data-testid="riff-bars">{r.bars}</span>
         <IconButton label="More bars" glyph="+" disabled={r.bars >= MAX_BARS} onPress={() => dispatch({ type: 'setBars', bars: r.bars + 1 })} testId="riff-bars-inc" />
       </Row>
+      </>
+      )}
       <Row label="Power chords">
         <Segmented<PowerMode>
           testId="ctl-power"
@@ -116,7 +121,14 @@ export function RiffSettingsSheet() {
         <button type="button" class="toolbar__btn" data-testid="tb-fix-key" onClick={() => dispatch({ type: 'fixOutOfKey' })}>
           Fix out-of-key
         </button>
-        {r.capture ? (
+        {free ? (
+          <>
+            <button type="button" class="toolbar__btn" data-testid="snap-to-beat" onClick={() => dispatch({ type: 'snapToBeat' })}>
+              Snap to beat
+            </button>
+            <p class="rs-status">Fits the notes to a steady tempo (adds bars, metronome)</p>
+          </>
+        ) : r.capture ? (
           <button type="button" class="toolbar__btn" data-testid="tb-requantize" onClick={() => dispatch({ type: 'requantize', grid: r.grid })}>
             Requantize
           </button>

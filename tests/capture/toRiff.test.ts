@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { toRiff } from '../../src/capture/toRiff';
-import type { RawNote, Transcription } from '../../src/capture/types';
+import { buildFree, fitShift, toRiff, toRiffFree } from '../../src/capture/toRiff';
+import type { PitchFrame, RawNote, Transcription } from '../../src/capture/types';
 
 // Free timing: no bpm is given, the tempo is estimated. Notes start at an arbitrary time with a little jitter.
 const stepS = 60 / 100 / 4;
@@ -57,5 +57,52 @@ describe('toRiff', () => {
     const r = toRiff(tr([]), { ...opts, base: { name: 'X' } });
     expect(r.notes).toEqual([]);
     expect(r.name).toBe('X');
+  });
+});
+
+describe('toRiffFree / buildFree', () => {
+  // 100 fps frames: 0.3 s silence, A5 0.3 s, gap 0.1 s, C6 0.4 s.
+  const frames: PitchFrame[] = [];
+  const hz = (m: number) => 440 * Math.pow(2, (m - 69) / 12);
+  for (let i = 0; i < 160; i++) {
+    const t = i * 0.01;
+    const m = t >= 0.3 && t < 0.6 ? 81 : t >= 0.7 && t < 1.1 ? 84 : 0;
+    frames.push({ t, hz: m ? hz(m) : 0, clarity: m ? 0.95 : 0, rms: m ? 0.2 : 0.0005 });
+  }
+  it('timing free, ticks of 10 ms, src = note initial, octave-shifted trace, span', () => {
+    const r = toRiffFree(frames, opts);
+    expect(r.timing).toBe('free');
+    expect(r.notes.length).toBe(2);
+    const [a, b] = r.notes;
+    expect(a!.midi).toBe(57); // 81 - 24
+    expect(b!.midi).toBe(60);
+    expect(a!.src).toEqual({ step: a!.step, length: a!.length, midi: a!.midi });
+    expect(a!.length).toBeGreaterThanOrEqual(28);
+    expect(a!.length).toBeLessThanOrEqual(31);
+    expect(b!.step - a!.step).toBeGreaterThanOrEqual(38);
+    expect(b!.step - a!.step).toBeLessThanOrEqual(42);
+    expect(r.span).toBe(b!.step + b!.length + 50);
+    // First sound sits ~50 ms into the riff; the trace starts at riff time ~0 and carries the shift.
+    expect(a!.step).toBeGreaterThanOrEqual(4);
+    expect(a!.step).toBeLessThanOrEqual(7);
+    expect(r.trace!.start).toBeCloseTo(0, 1);
+    const voiced = r.trace!.midi.filter((m): m is number => m !== null);
+    expect(Math.min(...voiced)).toBeCloseTo(57, 1);
+    expect(Math.max(...voiced)).toBeCloseTo(60, 1);
+    expect(r.trace!.midi.some((m) => m === null)).toBe(true); // the gap
+    expect(r.capture!.raw.length).toBe(2);
+    expect(r.capture!.raw[0]!.midi).toBeCloseTo(57, 1);
+  });
+  it('buildFree without a trace (test hook) and with a minimum length of 3 ticks', () => {
+    const r = buildFree([{ start: 1, end: 1.01, midi: 60, velocity: 90 }, { start: 1.5, end: 2, midi: 62, velocity: 90 }], null, opts);
+    expect(r.trace).toBeUndefined();
+    expect(r.timing).toBe('free');
+    expect(r.notes[0]!.length).toBe(3);
+    expect(r.notes[0]!.step).toBe(5);
+  });
+  it('fitShift: centre 55 (45 with power chords), never below the low string', () => {
+    expect(fitShift([81, 84], 'off', 40)).toBe(-24);
+    expect(fitShift([81, 84], 'r5', 40)).toBe(-36);
+    expect(fitShift([30, 31], 'off', 40)).toBeGreaterThanOrEqual(12);
   });
 });

@@ -3,7 +3,7 @@ import { useEffect, useState } from 'preact/hooks';
 import { screen } from '../app/nav';
 import { MicError } from '../platform/recorder';
 import { calibrateLatency, getLatencyMs } from '../platform/latency';
-import { SILENCE_STOP_S, beat, cancel, error, leave, level, options, phase, progress, setOption, start, stop } from '../capture/session';
+import { SILENCE_STOP_S, beat, cancel, error, leave, level, options, phase, setOption, start, stop } from '../capture/session';
 import { PitchTrace } from '../ui/PitchTrace';
 import { Segmented, Stepper, StompButton, Toggle } from '../ui/primitives';
 import '../ui/capture.css';
@@ -15,7 +15,7 @@ function statusText(): string {
   if (error.value) return error.value;
   if (p === 'countin') return 'Get ready…';
   if (p === 'recording') return `Listening… stops after ${SILENCE_STOP_S} s of silence`;
-  if (p === 'analyzing') return progress.value < 0.05 ? 'Analyzing… loading the note model' : `Analyzing… ${Math.round(progress.value * 100)}%`;
+  if (p === 'analyzing') return 'Analyzing…';
   return 'Tap REC and whistle your riff';
 }
 

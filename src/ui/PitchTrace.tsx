@@ -1,13 +1,12 @@
-// Live pitch trace: cyan line in a 12-semitone window that re-centres on the voice, scrolling over the last few seconds (beat lines only with the metronome).
+// Live pitch trace: the whole take so far as a cyan line (time axis grows to fit; pitch window follows everything sung, at least 12 semitones). Beat lines only with the metronome.
 import { useEffect, useRef } from 'preact/hooks';
 import { getRun, options } from '../capture/session';
 import { hzToMidi } from '../capture/pitch';
-import type { PitchFrame } from '../capture/types';
 import './capture.css';
 
-const ROWS = 12;
-/** Seconds of history on screen. */
-const WIN = 6;
+const MIN_ROWS = 12;
+/** Seconds shown before the take outgrows the screen; after that the whole take is squeezed to fit. */
+const MIN_WIN = 6;
 const LABEL_W = 34;
 const NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 const noteName = (m: number) => `${NAMES[((m % 12) + 12) % 12]}${Math.floor(m / 12) - 1}`;
@@ -19,7 +18,8 @@ function cssVar(el: Element, name: string): string {
 
 export function PitchTrace() {
   const ref = useRef<HTMLCanvasElement>(null);
-  const lo = useRef<number>(START_LO[options.value.source]);
+  // Smoothed pitch window (bottom MIDI, number of rows) and the running min/max of everything sung so far.
+  const view = useRef({ lo: START_LO[options.value.source] as number, rows: MIN_ROWS, scanned: 0, min: Infinity, max: -Infinity, live: null as unknown });
   const idleSource = useRef(options.value.source);
 
   useEffect(() => {
@@ -48,47 +48,65 @@ export function PitchTrace() {
 
       const r = getRun();
       const src = options.value.source;
-      if (!r && idleSource.current !== src) { idleSource.current = src; lo.current = START_LO[src]; }
-      if (r) {
-        const fr = r.live.frames;
-        let cur: PitchFrame | null = null;
-        for (let i = fr.length - 1; i >= Math.max(0, fr.length - 6); i--) if (fr[i]!.hz > 0) { cur = fr[i]!; break; }
-        if (cur) {
-          const m = hzToMidi(cur.hz);
-          if (m < lo.current || m > lo.current + ROWS - 1) lo.current = Math.round(m) - Math.floor(ROWS / 2);
+      const v = view.current;
+      if (!r && idleSource.current !== src) { idleSource.current = src; v.lo = START_LO[src]; v.rows = MIN_ROWS; }
+      const fr = r ? r.live.frames : null;
+      if (r && fr) {
+        if (v.live !== r.live) { v.live = r.live; v.scanned = 0; v.min = Infinity; v.max = -Infinity; }
+        for (; v.scanned < fr.length; v.scanned++) {
+          const f = fr[v.scanned]!;
+          if (f.hz <= 0) continue;
+          const m = hzToMidi(f.hz);
+          if (m < v.min) v.min = m;
+          if (m > v.max) v.max = m;
         }
       }
-      const base = lo.current;
-      const rowH = h / ROWS;
+      // Target window: everything sung so far +-2 semitones, at least 12 rows, centred when narrower.
+      let tLo = v.lo;
+      let tRows = MIN_ROWS;
+      if (v.max >= v.min) {
+        const lo = Math.floor(v.min - 2);
+        const hi = Math.ceil(v.max + 2);
+        tRows = Math.max(MIN_ROWS, hi - lo + 1);
+        tLo = lo - Math.floor((tRows - (hi - lo + 1)) / 2);
+      }
+      const k = r ? 0.2 : 1;
+      v.lo += (tLo - v.lo) * k;
+      v.rows += (tRows - v.rows) * k;
+      const base = v.lo;
+      const rows = v.rows;
+      const rowH = h / rows;
       const plotW = w - LABEL_W;
       g.font = '10px "IBM Plex Mono", monospace';
       g.textBaseline = 'middle';
-      for (let i = 0; i < ROWS; i++) {
-        const midi = base + ROWS - 1 - i;
-        const y = i * rowH;
+      const top = Math.ceil(base + rows - 1);
+      for (let midi = Math.floor(base); midi <= top; midi++) {
+        const y = h - (midi - base + 1) * rowH;
+        if (y < -rowH || y > h) continue;
         if (midi % 12 === 0) { g.fillStyle = cRow; g.fillRect(0, y, w, rowH); }
         g.fillStyle = cBorder;
         g.fillRect(0, y + rowH - 1, w, 1);
-        g.fillStyle = cText;
-        g.fillText(noteName(midi), 8, y + rowH / 2);
+        if (rowH >= 12 || midi % 12 === 0 || midi % 12 === 7) {
+          g.fillStyle = cText;
+          g.fillText(noteName(midi), 8, y + rowH / 2);
+        }
       }
-      if (!r) return;
+      if (!r || !fr) return;
       const t0 = r.tBar1 - r.live.startTime;
-      const cur = Math.max(0, r.ctx.currentTime - r.live.startTime);
-      const tEnd = Math.max(WIN, cur);
-      const xOf = (t: number) => LABEL_W + (plotW * (t - (tEnd - WIN))) / WIN;
+      const cur = r.endT ?? Math.max(0, r.ctx.currentTime - r.live.startTime);
+      // The whole take stays on screen: the axis is 6 s wide, then grows to fit what has been recorded.
+      const win = Math.max(MIN_WIN, cur);
+      const xOf = (t: number) => LABEL_W + (plotW * t) / win;
       const yOf = (m: number) => h - (m - base + 0.5) * rowH;
       if (r.metronome) {
-        for (let k = Math.max(0, Math.ceil((tEnd - WIN - t0) / r.beatS)); t0 + k * r.beatS <= tEnd; k++) {
-          const x = xOf(t0 + k * r.beatS);
-          if (x < LABEL_W) continue;
+        for (let b = 0; t0 + b * r.beatS <= cur; b++) {
+          const x = xOf(t0 + b * r.beatS);
           g.fillStyle = cBorder;
-          g.globalAlpha = k % 4 === 0 ? 1 : 0.45;
+          g.globalAlpha = b % 4 === 0 ? 1 : 0.45;
           g.fillRect(x, 0, 1, h);
         }
         g.globalAlpha = 1;
       }
-      const fr = r.live.frames;
       g.strokeStyle = cTrace;
       g.lineWidth = 3;
       g.lineCap = 'round';
@@ -96,13 +114,10 @@ export function PitchTrace() {
       g.beginPath();
       let pen = false;
       let prevM = 0;
-      let first = fr.length;
-      for (let i = fr.length - 1; i >= 0 && fr[i]!.t > tEnd - WIN - 0.5; i--) first = i;
-      for (let i = first; i < fr.length; i++) {
+      for (let i = 0; i < fr.length; i++) {
         const f = fr[i]!;
         if (f.hz <= 0) { pen = false; continue; }
         const x = xOf(f.t);
-        if (x < LABEL_W - 4 || x > w) { pen = false; continue; }
         const m = hzToMidi(f.hz);
         if (pen && Math.abs(m - prevM) > 2.5) pen = false;
         if (pen) g.lineTo(x, yOf(m)); else g.moveTo(x, yOf(m));
@@ -110,8 +125,10 @@ export function PitchTrace() {
         prevM = m;
       }
       g.stroke();
-      g.fillStyle = cAccent;
-      g.fillRect(xOf(cur) - 1, 0, 2, h);
+      if (r.endT === null) {
+        g.fillStyle = cAccent;
+        g.fillRect(xOf(cur) - 1, 0, 2, h);
+      }
     };
     raf = requestAnimationFrame(draw);
     return () => cancelAnimationFrame(raf);

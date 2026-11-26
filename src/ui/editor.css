@@ -128,6 +128,71 @@
   will-change: transform;
 }
 
+/* ---------- Free timing: ruler, trace, translucent notes ---------- */
+.roll__ruler {
+  position: sticky;
+  top: 0;
+  height: 20px;
+  z-index: 4;
+  background: var(--surface);
+  border-bottom: 1px solid var(--muted);
+  pointer-events: none;
+}
+.roll__tick {
+  position: absolute;
+  top: 0;
+  padding-left: 3px;
+  height: 100%;
+  border-left: 1px solid var(--muted);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  line-height: 20px;
+  color: var(--muted);
+}
+.roll__ruler { margin-bottom: -20px; }
+.roll__trace {
+  position: absolute;
+  z-index: 1;
+  pointer-events: none;
+  overflow: visible;
+}
+.roll__trace-seg {
+  fill: none;
+  stroke: var(--trace);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.roll__trace-seg--dim {
+  opacity: 0.4;
+  stroke-dasharray: 5 3;
+}
+.roll__note--free {
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
+  border: 2px solid var(--accent);
+}
+.roll__note--free.roll__note--sel {
+  background: color-mix(in srgb, var(--accent) 38%, transparent);
+}
+.roll__note--free[data-active] {
+  background: color-mix(in srgb, var(--accent) 55%, transparent);
+}
+.toolbar__zoom {
+  width: 34px;
+  min-height: var(--tap);
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-2);
+  color: var(--text);
+  font: inherit;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.toolbar__zoom:disabled { opacity: 0.4; }
+
 /* ---------- Note sheet ---------- */
 .sheet-grid {
   display: grid;

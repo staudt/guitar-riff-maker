@@ -75,3 +75,11 @@ describe('shareTab', () => {
     await expect(shareTab(phrase)).rejects.toBe(abort);
   });
 });
+
+import { demoFreeRiff } from '../../src/model/demo';
+import { tabText as tt } from '../../src/model/export';
+describe('free tab text', () => {
+  it('header says free time', () => {
+    expect(tt(demoFreeRiff()).split('\n')[0]).toBe('Demo free riff — A minor — free time — Standard');
+  });
+});

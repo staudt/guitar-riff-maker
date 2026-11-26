@@ -63,3 +63,26 @@ describe('renderTabText', () => {
     expect(blocks[0]).toContain('x');
   });
 });
+
+import { layoutTabSequence } from '../../src/music/tab';
+describe('layoutTabSequence', () => {
+  it('one column per note with spacers for gaps; golden text', () => {
+    const notes = [{ step: 0, length: 10 }, { step: 12, length: 10 }, { step: 40, length: 10 }, { step: 120, length: 10 }];
+    const pos = [[P(0, 5)], [P(1, 7)], [P(1, 10)], [P(2, 0)]];
+    const cols = layoutTabSequence({ notes, pos, strings: 6, totalSteps: 300, grid: 16 });
+    // gaps: 20ms->0, 180ms->1, 700ms->2 spacers
+    expect(cols.map((c) => c.noteIndex)).toEqual([0, 1, null, 2, null, null, 3]);
+    expect(cols.filter((c) => c.barline)).toHaveLength(1);
+    expect(renderTabText('H', cols, names)).toBe(
+      [
+        'H',
+        'e|---------------------|',
+        'B|---------------------|',
+        'G|---------------------|',
+        'D|------------------0--|',
+        'A|---7-----10----------|',
+        'E|5--------------------|',
+      ].join('\n'),
+    );
+  });
+});
