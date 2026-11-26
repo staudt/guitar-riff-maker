@@ -90,13 +90,13 @@ export function LessonPanel() {
             <button type="button" class="lesson__btn" data-testid="step-prev" onClick={stepPrev}>
               ◀ PREV
             </button>
+            <button type="button" class="lesson__btn lesson__btn--ghost" aria-label="Replay" title="Replay" data-testid="step-replay" onClick={() => sound(i)}>
+              ↻
+            </button>
             <button type="button" class="lesson__btn lesson__btn--go" data-testid="step-next" onClick={stepNext}>
               NEXT ▶
             </button>
           </div>
-          <button type="button" class="lesson__btn lesson__btn--ghost" data-testid="step-replay" onClick={() => sound(i)}>
-            Replay
-          </button>
         </div>
       )}
     </section>

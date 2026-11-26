@@ -1,4 +1,4 @@
-// Controls row under the neck: key, octave, region, hand, power.
+// One controls row under the neck: [key ◀▶] [oct ±] [pos ◀▶] [⇋]. Power chords live in the settings sheet.
 import './primitives';
 import './views.css';
 import { dispatch, riff } from '../model/store';
@@ -6,9 +6,9 @@ import { fingering } from '../model/fingering';
 import { canOctave } from '../model/edit';
 import { rangeOf } from '../music/tuning';
 import { pcName } from '../music/theory';
-import { IconButton, Segmented } from './primitives';
+import { IconButton } from './primitives';
 import { lefty, setSetting } from '../app/settings';
-import type { PowerMode } from '../model/riff';
+import { shiftKey } from './RiffSettingsSheet';
 
 function Step(props: { label: string; value: string; id: string; onDec: () => void; onInc: () => void; decOff?: boolean; incOff?: boolean; decText?: string; incText?: string }) {
   const { label, value, id, onDec, onInc, decOff, incOff, decText = '◀', incText = '▶' } = props;
@@ -27,6 +27,8 @@ function Step(props: { label: string; value: string; id: string; onDec: () => vo
   );
 }
 
+const SHORT: Record<string, string> = { minor: 'min', major: 'maj', dorian: 'dor', mixolydian: 'mix', pentatonic: 'pent' };
+
 export function NeckControls() {
   const r = riff.value;
   const fg = fingering.value;
@@ -42,9 +44,9 @@ export function NeckControls() {
       <Step
         label="Key"
         id="ctl-key"
-        value={`${pcName(r.key.tonic)} ${r.key.scale}`}
-        onDec={() => dispatch({ type: 'transpose', semis: -1 })}
-        onInc={() => dispatch({ type: 'transpose', semis: 1 })}
+        value={`${pcName(r.key.tonic)} ${SHORT[r.key.scale] ?? r.key.scale}`}
+        onDec={() => shiftKey(-1)}
+        onInc={() => shiftKey(1)}
       />
       <Step
         label="Octave"
@@ -67,16 +69,6 @@ export function NeckControls() {
         onInc={() => cycle(1)}
       />
       <IconButton label={lefty.value ? 'Left-handed' : 'Right-handed'} glyph="⇋" active={lefty.value} onPress={() => setSetting('lefty', !lefty.value)} testId="ctl-lefty" />
-      <Segmented<PowerMode>
-        testId="ctl-power"
-        value={r.power}
-        options={[
-          { value: 'off', label: 'off' },
-          { value: 'r5', label: '5' },
-          { value: 'r58', label: '8' },
-        ]}
-        onChange={(power) => dispatch({ type: 'setPower', power })}
-      />
     </div>
   );
 }

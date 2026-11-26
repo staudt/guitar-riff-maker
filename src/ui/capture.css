@@ -17,3 +17,6 @@
 .capture-cal__btn:disabled { opacity: 0.5; }
 .capture-cal__ms { font-family: var(--font-mono); color: var(--muted); }
 .capture-cal__msg { color: var(--rec); font-size: 0.85rem; }
+.capture-screen .ui-segmented__opt { white-space: nowrap; padding: 0 var(--space-3); }
+.capture-screen { padding: var(--space-1) var(--space-2); gap: var(--space-2); }
+@media (max-height: 700px) { .capture-tip { display: none; } .capture-stage { min-height: 120px; } }

@@ -88,7 +88,7 @@ export function NeckView({ mode = 'edit', ghosts, onPickGhost }: NeckViewProps) 
 
   // Mini strip.
   const MINI_W = NECK_W;
-  const MINI_H = 16;
+  const MINI_H = 12;
   const mini = (f: number) => mx(6 + (f / Math.max(r.maxFret, 1)) * (MINI_W - 12));
   const miniA = mini(w.start - 0.5);
   const miniB = mini(w.end + 0.5);
@@ -107,7 +107,7 @@ export function NeckView({ mode = 'edit', ghosts, onPickGhost }: NeckViewProps) 
 
   return (
     <div class="neck" data-mode={mode} data-lefty={mirror ? '' : undefined} data-testid="neck-view">
-      <svg class="neck__svg" viewBox={`0 0 ${NECK_W} ${NECK_H}`} role="img" aria-label="Fretboard">
+      <svg class="neck__svg" viewBox={`0 4 ${NECK_W} ${NECK_H - 8}`} role="img" aria-label="Fretboard">
         <g class="neck__pan" key={w.start} style={{ '--pan': `${dir * 24}px` }}>
           <g data-board transform={mirror ? `translate(${NECK_W},0) scale(-1,1)` : undefined}>
             <rect class="neck__wood" x={BOARD_L - (nutAtLeft ? 0 : 6)} y={STRING_TOP - 10} width={BOARD_R - BOARD_L + (nutAtLeft ? 4 : 10)} height={STRING_BOTTOM - STRING_TOP + 20} rx={4} />

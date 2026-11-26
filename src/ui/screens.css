@@ -1,27 +1,71 @@
-/* Screen-level layout: header, the always-visible tab+neck stack, and the mode area below. */
+/* Screen-level layout: header, the always-visible tab+neck stack, and the mode area below.
+ * Everything is sized to fit 375x667 without page scroll. */
+#app:has(.riff-screen, .capture-screen) {
+  padding:
+    max(var(--space-2), env(safe-area-inset-top))
+    max(var(--space-2), env(safe-area-inset-right))
+    max(var(--space-2), env(safe-area-inset-bottom))
+    max(var(--space-2), env(safe-area-inset-left));
+}
+
 .riff-screen {
-  gap: var(--space-2);
+  gap: var(--space-1);
 }
 
 .riff-header {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
-  min-height: var(--tap);
+  gap: var(--space-1);
+  height: 48px;
+  flex: none;
 }
 
-.riff-header__back {
-  width: var(--tap);
+.riff-header__back,
+.riff-header__more {
+  flex: none;
+  width: 40px;
+  min-width: 40px;
   height: var(--tap);
+  padding: 0;
   border: 1px solid var(--border);
-  border-radius: var(--radius-md, 10px);
+  border-radius: var(--radius-md);
   background: var(--surface);
   font-size: 1.1rem;
+}
+
+.riff-header__more {
+  border: 0;
+  background: none;
+  font-size: 1.4rem;
+}
+
+.riff-header .ui-segmented { flex: none; padding: 2px; }
+.riff-header .ui-segmented__opt { min-height: 38px; padding: 0 var(--space-2); font-size: 13px; }
+
+.riff-header__rec {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: var(--tap);
+  min-width: var(--tap);
+  height: var(--tap);
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--rec);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--rec) 45%, transparent);
+}
+.riff-header__rec span {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--ground);
 }
 
 .riff-header__title {
   flex: 1;
   min-width: 0;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -33,7 +77,8 @@
 
 .riff-header__name {
   font-weight: 700;
-  font-size: 1.05rem;
+  font-size: 0.95rem;
+  line-height: 1.2;
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -42,14 +87,19 @@
 
 .riff-header__meta {
   font-family: var(--font-mono);
-  font-size: 0.8rem;
+  font-size: 0.72rem;
+  line-height: 1.2;
   color: var(--accent);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .riff-screen__views {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: var(--space-1);
   flex: none;
 }
 
@@ -59,7 +109,7 @@
   min-height: 0;
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: var(--space-1);
 }
 
 .riff-screen__edit > [data-testid='roll'] {

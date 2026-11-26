@@ -25,8 +25,8 @@
 .tab__playhead { position: absolute; left: 0; top: 0; bottom: 0; width: 2px; background: var(--accent); box-shadow: 0 0 6px var(--accent); pointer-events: none; will-change: transform; }
 
 /* ---- Neck ---- */
-.neck { display: flex; flex-direction: column; gap: var(--space-1); }
-.neck__svg { width: 100%; height: auto; max-height: 150px; display: block; overflow: hidden; }
+.neck { display: flex; flex-direction: column; gap: 2px; }
+.neck__svg { width: 100%; height: auto; max-height: 112px; display: block; overflow: hidden; }
 .neck__pan { animation: neck-pan 0.28s ease-out; }
 @keyframes neck-pan { from { opacity: 0.35; transform: translateX(var(--pan, 0)); } to { opacity: 1; transform: none; } }
 .neck__wood { fill: var(--wood); stroke: var(--border); stroke-width: 1; }
@@ -50,11 +50,14 @@
 .neck__ghost-dot { fill: none; stroke: var(--muted); stroke-width: 1.5; stroke-dasharray: 3 2; }
 .neck__dotnum--ghost { fill: var(--muted); }
 .neck__move { stroke: var(--accent-dim); stroke-width: 2; stroke-linecap: round; pointer-events: none; }
-.neck__mini { width: 100%; height: 16px; display: block; }
+.neck__mini { width: 100%; height: 12px; display: block; }
 .neck__mini-bg { fill: var(--wood); stroke: var(--border); stroke-width: 1; }
 .neck__mini-win { fill: var(--accent-dim); stroke: var(--accent); stroke-width: 1; }
 .neck__mini-dot { fill: var(--text); }
 
-/* ---- Controls ---- */
-.ctls { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: var(--space-2); }
-.ctls .ui-segmented { flex: none; }
+/* ---- Controls: one compact row. Buttons are visually ~32px wide, 44px tall hit area. ---- */
+.ctls { display: flex; align-items: center; justify-content: space-between; gap: var(--space-1); height: var(--tap); }
+.ctls .ui-stepper { flex: none; }
+.ctls .ui-stepper__btn { min-width: 32px; width: 32px; font-size: 13px; }
+.ctls .ui-stepper__value { min-width: 0; padding: 0 2px; font-size: 13px; white-space: nowrap; }
+.ctls .ui-icon-btn { width: 40px; flex: none; }

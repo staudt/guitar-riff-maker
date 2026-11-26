@@ -157,20 +157,19 @@
 /* ---------- Toolbar ---------- */
 .toolbar {
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
   gap: var(--space-1);
-  padding: var(--space-1) var(--space-2);
+  height: var(--tap);
+  flex: none;
 }
-.toolbar__row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-1) var(--space-2);
-}
-.toolbar__group {
-  display: inline-flex;
-  align-items: center;
-}
+.toolbar .ui-icon-btn { width: 40px; }
+.toolbar .ui-segmented { padding: 2px; }
+.toolbar .ui-segmented__opt { min-height: 38px; padding: 0 var(--space-2); font-size: 13px; }
+.toolbar .ui-toggle { gap: var(--space-2); padding: 0 var(--space-2); font-size: 13px; }
+.toolbar .ui-toggle__track { width: 36px; height: 22px; }
+.toolbar .ui-toggle__knob { width: 16px; height: 16px; }
+.toolbar .ui-toggle[aria-checked='true'] .ui-toggle__knob { transform: translateX(14px); }
 .toolbar__value {
   min-width: 44px;
   text-align: center;
@@ -193,6 +192,14 @@
 .toolbar__btn:active {
   border-color: var(--accent);
 }
+
+/* ---------- Riff settings sheet ---------- */
+.rs-row { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); }
+.rs-row__label { font-size: 13px; color: var(--muted); flex: none; }
+.rs-row__ctl { display: flex; align-items: center; gap: var(--space-2); min-width: 0; }
+.rs-value { min-width: 48px; text-align: center; font-family: var(--font-mono); }
+.rs-actions { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-2); }
+.rs-status { min-height: 1.2em; margin: 0; text-align: center; color: var(--accent); font-size: 13px; }
 
 /* Lesson playback highlights (attributes set by ui/playhead.ts). */
 .roll__note[data-active] {

@@ -8,11 +8,11 @@ import { totalSteps } from '../model/riff';
 
 const COL_W = 22;
 const COL_W_WIDE = 30;
-const ROW_H = 18;
-const TOP = 14;
+const ROW_H = 14;
+const TOP = 12;
 const PAD_L = 8;
 const PAD_R = 14;
-const HEIGHT = TOP + ROW_H * 5 + 30;
+const HEIGHT = TOP + ROW_H * 5 + 24;
 const NAMES_W = 22;
 
 let stepX: (step: number) => number = (s) => PAD_L + s * 12;
@@ -59,7 +59,7 @@ export function TabView({ mode = 'edit', onSelectNote }: TabViewProps) {
   };
 
   const lineY = (row: number) => TOP + row * ROW_H;
-  const tickY = lineY(n - 1) + 12;
+  const tickY = lineY(n - 1) + 8;
 
   return (
     <div class="tab" data-mode={mode} data-testid="tab-view">
@@ -110,7 +110,7 @@ export function TabView({ mode = 'edit', onSelectNote }: TabViewProps) {
                   {c.cells.map((cell, row) =>
                     cell === null ? null : (
                       <g key={row}>
-                        <rect class="tab__cellbg" x={centers[i]! - (cell.length * 4 + 2)} y={lineY(row) - 8} width={cell.length * 8 + 4} height={16} rx={3} />
+                        <rect class="tab__cellbg" x={centers[i]! - (cell.length * 4 + 2)} y={lineY(row) - 6.5} width={cell.length * 8 + 4} height={13} rx={3} />
                         <text class="tab__num" x={centers[i]} y={lineY(row) + 4} text-anchor="middle">
                           {cell}
                         </text>

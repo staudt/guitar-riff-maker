@@ -1,10 +1,10 @@
 import './lesson.css';
-import { Chip, Segmented, Toggle } from './primitives';
+import { Chip, Segmented } from './primitives';
 import { loop, metronomeOn, rate } from '../audio/sync';
 import { countIn, metronome, setSetting } from '../app/settings';
-import { riff, selection, dispatch } from '../model/store';
+import { riff, selection } from '../model/store';
 import { lessonMode, type LessonMode } from '../model/lesson';
-import { STEPS_PER_BAR, type Instrument } from '../model/riff';
+import { STEPS_PER_BAR } from '../model/riff';
 
 const RATES = [50, 60, 75, 90, 100];
 
@@ -29,10 +29,13 @@ export function TransportBar() {
 
   return (
     <div class="transport" data-testid="transport">
-      <div class="transport__row">
+      <div class="transport__row transport__rates">
         {RATES.map((v) => (
           <Chip key={v} label={`${v}%`} active={pct === v} testId={`tempo-${v}`} onPress={() => (rate.value = v / 100)} />
         ))}
+        <span class="transport__bpm" data-testid="tempo-bpm">
+          {Math.round(r.bpm * rate.value)} bpm
+        </span>
       </div>
       <div class="transport__row transport__tempo">
         <input
@@ -46,41 +49,56 @@ export function TransportBar() {
           data-testid="tempo-slider"
           onInput={(e) => (rate.value = Number((e.currentTarget as HTMLInputElement).value) / 100)}
         />
-        <span class="transport__bpm" data-testid="tempo-bpm">
-          {Math.round(r.bpm * rate.value)} bpm
-        </span>
       </div>
-      <div class="transport__row">
-        <Chip label="All" active={whole} testId="loop-all" onPress={() => setLoop(0, 0)} />
-        {bars.map((n) => (
-          <Chip
-            key={n}
-            label={`Bar ${n}`}
-            active={lp.start === (n - 1) * STEPS_PER_BAR && lp.end === n * STEPS_PER_BAR}
-            testId={`loop-bar-${n}`}
-            onPress={() => setLoop((n - 1) * STEPS_PER_BAR, n * STEPS_PER_BAR)}
-          />
-        ))}
-        {sel && (
-          <Chip
-            label="Sel"
-            active={lp.start === sel.start && lp.end === sel.end}
-            testId="loop-sel"
-            onPress={() => setLoop(sel.start, sel.end)}
-          />
-        )}
-      </div>
-      <div class="transport__row">
-        <Toggle label="Count-in" on={countIn.value} testId="toggle-countin" onChange={(v) => setSetting('countIn', v)} />
-        <Toggle
-          label="Metronome"
-          on={metronome.value}
-          testId="toggle-metronome"
-          onChange={(v) => {
+      <div class="transport__row transport__loops">
+        <div class="transport__loopchips">
+          <Chip label="All" active={whole} testId="loop-all" onPress={() => setLoop(0, 0)} />
+          {bars.map((n) => (
+            <Chip
+              key={n}
+              label={`Bar ${n}`}
+              active={lp.start === (n - 1) * STEPS_PER_BAR && lp.end === n * STEPS_PER_BAR}
+              testId={`loop-bar-${n}`}
+              onPress={() => setLoop((n - 1) * STEPS_PER_BAR, n * STEPS_PER_BAR)}
+            />
+          ))}
+          {sel && (
+            <Chip
+              label="Sel"
+              active={lp.start === sel.start && lp.end === sel.end}
+              testId="loop-sel"
+              onPress={() => setLoop(sel.start, sel.end)}
+            />
+          )}
+        </div>
+        <button
+          type="button"
+          role="switch"
+          class="transport__icon"
+          aria-checked={countIn.value}
+          aria-label="Count-in"
+          title="Count-in"
+          data-testid="toggle-countin"
+          onClick={() => setSetting('countIn', !countIn.value)}
+        >
+          1·2
+        </button>
+        <button
+          type="button"
+          role="switch"
+          class="transport__icon"
+          aria-checked={metronome.value}
+          aria-label="Metronome"
+          title="Metronome"
+          data-testid="toggle-metronome"
+          onClick={() => {
+            const v = !metronome.value;
             setSetting('metronome', v);
             metronomeOn.value = v;
           }}
-        />
+        >
+          ♩
+        </button>
       </div>
       <div class="transport__row">
         <Segmented<LessonMode>
@@ -91,16 +109,6 @@ export function TransportBar() {
             { value: 'step', label: 'Step' },
           ]}
           onChange={(v) => (lessonMode.value = v)}
-        />
-        <Segmented<Instrument>
-          testId="instrument"
-          value={r.instrument}
-          options={[
-            { value: 'clean', label: 'Clean' },
-            { value: 'drive', label: 'Drive' },
-            { value: 'guide', label: 'Guide' },
-          ]}
-          onChange={(v) => dispatch({ type: 'setInstrument', instrument: v })}
         />
       </div>
     </div>

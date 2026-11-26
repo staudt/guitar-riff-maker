@@ -1,6 +1,8 @@
 import { riff, dispatch } from '../model/store';
 import { pcName } from '../music/theory';
 import { riffMode, screen } from '../app/nav';
+import { moreOpen } from '../app/ui-state';
+import { stop } from '../audio/sync';
 import { Segmented } from './primitives';
 import './screens.css';
 
@@ -38,6 +40,20 @@ export function RiffHeader() {
         value={riffMode.value}
         onChange={(v) => (riffMode.value = v)}
       />
+      <button class="riff-header__more" aria-label="Riff settings" data-testid="riff-more" onClick={() => (moreOpen.value = true)}>
+        ⋯
+      </button>
+      <button
+        class="riff-header__rec"
+        aria-label="Record a new riff"
+        data-testid="nav-capture"
+        onClick={() => {
+          stop();
+          screen.value = 'capture';
+        }}
+      >
+        <span aria-hidden="true" />
+      </button>
     </header>
   );
 }

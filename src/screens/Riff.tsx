@@ -12,6 +12,7 @@ import { NeckControls } from '../ui/NeckControls';
 import { EditToolbar } from '../ui/EditToolbar';
 import { RollEditor } from '../ui/RollEditor';
 import { NoteSheet } from '../ui/NoteSheet';
+import { RiffSettingsSheet } from '../ui/RiffSettingsSheet';
 import { LessonPanel } from '../ui/LessonPanel';
 import { CountInOverlay } from '../ui/CountInOverlay';
 import { installPlayhead } from '../ui/playhead';
@@ -88,6 +89,7 @@ export function RiffScreen() {
           <LessonPanel />
         </section>
       )}
+      <RiffSettingsSheet />
       <CountInOverlay />
     </main>
   );
