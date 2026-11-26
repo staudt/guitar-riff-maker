@@ -177,21 +177,6 @@
 .roll__note--free[data-active] {
   background: color-mix(in srgb, var(--accent) 55%, transparent);
 }
-.toolbar__zoom {
-  width: 34px;
-  min-height: var(--tap);
-  padding: 0;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  background: var(--surface-2);
-  color: var(--text);
-  font: inherit;
-  font-size: 18px;
-  line-height: 1;
-  cursor: pointer;
-  touch-action: manipulation;
-}
-.toolbar__zoom:disabled { opacity: 0.4; }
 
 /* ---------- Note sheet ---------- */
 .sheet-grid {
@@ -225,9 +210,10 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--space-1);
-  height: var(--tap);
+  min-height: var(--tap);
   flex: none;
 }
+.toolbar > * { min-width: 0; }
 .toolbar .ui-icon-btn { width: 40px; }
 .toolbar .ui-segmented { padding: 2px; }
 .toolbar .ui-segmented__opt { min-height: 38px; padding: 0 var(--space-2); font-size: 13px; }
@@ -282,9 +268,12 @@
   align-items: center;
   gap: var(--space-2);
   min-height: var(--tap);
-  padding: 0 var(--space-4);
+  padding: 0 var(--space-3);
   border: 0;
   border-radius: var(--radius-pill);
+  font-size: 0.9rem;
+  white-space: nowrap;
+  flex: none;
   background: var(--accent);
   color: var(--ground);
   font-weight: 700;
@@ -295,3 +284,36 @@
   color: var(--accent);
   box-shadow: inset 0 0 0 2px var(--accent);
 }
+
+/* Toolbar: speed chip and square icon buttons that shrink a little before anything clips. */
+.toolbar__chip {
+  flex: none;
+  min-height: var(--tap);
+  padding: 0 var(--space-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--surface-2);
+  color: var(--accent);
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  white-space: nowrap;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.toolbar__sq {
+  flex: 1 1 0;
+  max-width: 2.6rem;
+  min-width: 1.9rem;
+  min-height: var(--tap);
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.toolbar__sq:disabled { opacity: 0.4; }
+@media (max-width: 345px) { .toolbar__play-text { display: none; } }

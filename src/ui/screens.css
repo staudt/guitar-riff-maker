@@ -16,7 +16,7 @@
   display: flex;
   align-items: center;
   gap: var(--space-1);
-  height: 48px;
+  min-height: 48px;
   flex: none;
 }
 
@@ -39,8 +39,6 @@
   font-size: 1.4rem;
 }
 
-.riff-header .ui-segmented { flex: none; padding: 2px; }
-.riff-header .ui-segmented__opt { min-height: 38px; padding: 0 var(--space-2); font-size: 13px; }
 
 .riff-header__rec {
   flex: none;
@@ -103,8 +101,7 @@
   flex: none;
 }
 
-.riff-screen__edit,
-.riff-screen__lesson {
+.riff-screen__edit {
   flex: 1;
   min-height: 0;
   display: flex;

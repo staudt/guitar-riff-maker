@@ -55,9 +55,27 @@
 .neck__mini-win { fill: var(--accent-dim); stroke: var(--accent); stroke-width: 1; }
 .neck__mini-dot { fill: var(--text); }
 
-/* ---- Controls: one compact row. Buttons are visually ~32px wide, 44px tall hit area. ---- */
-.ctls { display: flex; align-items: center; justify-content: space-between; gap: var(--space-1); height: var(--tap); }
-.ctls .ui-stepper { flex: none; }
-.ctls .ui-stepper__btn { min-width: 32px; width: 32px; font-size: 13px; }
-.ctls .ui-stepper__value { min-width: 0; padding: 0 2px; font-size: 13px; white-space: nowrap; }
-.ctls .ui-icon-btn { width: 40px; flex: none; }
+/* ---- Controls: one compact row that shrinks (ellipsis) rather than overflows, and wraps if it must. ---- */
+.ctls { overflow-x: clip; display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1); min-height: var(--tap); }
+.ctls .ui-stepper { flex: 1 1 auto; overflow: visible; }
+.ctls .ctl--oct { flex: none; }
+.ctls .ui-stepper__btn {
+  position: relative;
+  flex: none;
+  min-width: 0;
+  width: 1.4rem;
+  min-height: var(--tap);
+  font-size: 0.75rem;
+}
+/* 44px hit area around a ~30px visual button */
+.ctls .ui-stepper__btn::after { content: ''; position: absolute; inset: 0 -0.65rem; }
+.ctls .ui-stepper__value {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 0 1px;
+  font-size: 0.78rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ctls .ui-icon-btn { width: 2.3rem; min-width: 0; flex: none; }

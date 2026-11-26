@@ -1,7 +1,7 @@
 // Riff library and autosave: glues the editor store to IndexedDB. If storage is unavailable
 // (private mode, quota), everything keeps working in memory and `storageError` is set.
 import { signal } from '@preact/signals';
-import { screen, riffMode } from '../app/nav';
+import { screen } from '../app/nav';
 import { deleteRiff, duplicateRiff, getMeta, getRiff, listRiffs, putRiff, setMeta, type RiffSummary } from './db';
 import { demoRiff } from './demo';
 import { importJson } from './export';
@@ -136,7 +136,6 @@ export async function openRiff(id: string): Promise<boolean> {
   loadRiff(r);
   await safe(() => setMeta('lastOpened', id), undefined);
   screen.value = 'riff';
-  riffMode.value = 'edit';
   return true;
 }
 
@@ -147,7 +146,6 @@ export async function newBlankRiff(): Promise<void> {
   cancelPending(); // loadRiff queued it for autosave; save now instead
   await save(r);
   await refreshLibrary();
-  riffMode.value = 'edit';
   screen.value = 'riff';
 }
 

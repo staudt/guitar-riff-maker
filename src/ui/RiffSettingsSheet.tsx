@@ -5,8 +5,8 @@ import { pcName, SCALES } from '../music/theory';
 import type { PitchClass, ScaleName } from '../music/types';
 import { MAX_BARS, type Instrument, type PowerMode } from '../model/riff';
 import { exportJson, shareTab } from '../model/export';
-import { keyMode, moreOpen, type KeyMode } from '../app/ui-state';
-import { IconButton, Segmented, Sheet } from './primitives';
+import { keyMode, moreOpen, snapScale, type KeyMode } from '../app/ui-state';
+import { IconButton, Segmented, Sheet, Toggle } from './primitives';
 import './editor.css';
 
 function download(name: string, text: string): void {
@@ -67,6 +67,9 @@ export function RiffSettingsSheet() {
             </option>
           ))}
         </select>
+      </Row>
+      <Row label="Snap to scale">
+        <Toggle label="Snap to scale" on={snapScale.value} onChange={(on) => (snapScale.value = on)} testId="tb-snap" />
       </Row>
       <Row label="Key steps">
         <Segmented<KeyMode>

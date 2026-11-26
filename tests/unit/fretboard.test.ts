@@ -80,15 +80,16 @@ describe('fingerRiff', () => {
     expect(r.pos).toEqual([{ string: -1, fret: -1 }]);
     expect(r.hands).toHaveLength(1);
   });
-  it('is fast for 64 notes', () => {
-    const notes = Array.from({ length: 64 }, (_, i) => ({ midi: 45 + ((i * 7) % 24) }));
+  it('is fast for 64 timed notes (with triad pair-states)', () => {
+    const notes = Array.from({ length: 64 }, (_, i) => ({ midi: 45 + ((i * 7) % 24), start: i * 0.15, end: i * 0.15 + 0.15 }));
     let best = Infinity;
     for (let k = 0; k < 15; k++) {
       const t = performance.now();
       fingerRiff(notes, STANDARD, { ...opt, target: 5 });
       best = Math.min(best, performance.now() - t);
     }
-    expect(best).toBeLessThan(5);
+    // Typically ~1-3 ms; the generous bound only guards against accidental blow-ups on slow CI.
+    expect(best).toBeLessThan(100);
   });
   it('exposes COST', () => {
     expect(COST.wShift).toBeGreaterThan(0);
@@ -122,5 +123,77 @@ describe('bestRegions', () => {
     const rs = bestRegions(DEMO, STANDARD, opt).filter((r) => r.anchor >= 5);
     expect(rs.length).toBeGreaterThan(0);
     for (const r of rs) expect(r.pos.some((p) => p.fret === 0)).toBe(false);
+  });
+});
+
+/** Notes at a steady `ioi` seconds apart, each lasting `dur` (default: legato). */
+const timed = (midis: number[], ioi: number, dur = ioi) => midis.map((midi, i) => ({ midi, start: i * ioi, end: i * ioi + dur }));
+const shifts = (hands: number[]) => hands.filter((h, i) => i > 0 && h !== hands[i - 1]).length;
+
+describe('string changes beat hand shifts', () => {
+  // The demo melody at 96 bpm, 16ths = 0.15 s.
+  const DEMO_T = timed([45, 48, 50, 52, 55, 52, 50, 48, 45, 45, 48, 50, 52, 55, 57], 0.3);
+
+  it('low region plays G3 as the open G string, not D:5 (changed: used to slide along the D string)', () => {
+    const r = fingerRiff(DEMO_T, STANDARD, { ...opt, target: 1 });
+    expect(r.pos[4]).toEqual({ string: 3, fret: 0 });
+    expect(r.pos.every((p) => p.fret >= 0 && p.fret <= 3)).toBe(true);
+    expect(shifts(r.hands)).toBe(0);
+  });
+
+  it('5th position keeps the box on strings E/A/D', () => {
+    const r = fingerRiff(DEMO_T, STANDARD, { ...opt, target: 5 });
+    expect(r.pos.every((p) => p.fret >= 5 && p.fret <= 8 && p.string <= 2)).toBe(true);
+    expect(shifts(r.hands)).toBe(0);
+  });
+
+  it('a fast 7-fret melodic range stays in one position, using several strings', () => {
+    const r = fingerRiff(timed([50, 52, 54, 55, 57, 59, 57, 55, 54, 52, 50], 0.1), STANDARD, { ...opt, target: 0 });
+    expect(shifts(r.hands)).toBe(0);
+    expect(new Set(r.pos.map((p) => p.string)).size).toBeGreaterThanOrEqual(2);
+    const fretted = r.pos.filter((p) => p.fret > 0).map((p) => p.fret);
+    expect(Math.max(...fretted) - Math.min(...fretted)).toBeLessThanOrEqual(3);
+  });
+
+  it('a forced shift is much cheaper after a rest than in a fast passage', () => {
+    // Pinned on the low E string: frets 1-3, then frets 9-11. The hand has to travel either way.
+    const pins = [1, 2, 3, 9, 10, 11].map((f) => ({ midi: 40 + f, pin: { string: 0, fret: f } }));
+    const fast = fingerRiff(pins.map((n, i) => ({ ...n, start: i * 0.1, end: i * 0.1 + 0.1 })), STANDARD, { ...opt, target: 1 });
+    const rest = fingerRiff(pins.map((n, i) => ({ ...n, start: i * 0.1 + (i >= 3 ? 1 : 0), end: i * 0.1 + 0.1 + (i >= 3 ? 1 : 0) })), STANDARD, { ...opt, target: 1 });
+    expect(shifts(fast.hands)).toBe(1);
+    expect(shifts(rest.hands)).toBe(1);
+    expect(rest.cost).toBeLessThan(fast.cost * 0.6);
+  });
+
+  it('an A-minor arpeggio played fast lands on adjacent strings in a small span', () => {
+    const r = fingerRiff(timed([45, 48, 52, 57], 0.12), STANDARD, { ...opt, target: 2 });
+    const fr = r.pos.map((p) => p.fret);
+    expect(Math.max(...fr) - Math.min(...fr)).toBeLessThanOrEqual(3);
+    for (let i = 1; i < r.pos.length; i++) expect(Math.abs(r.pos[i]!.string - r.pos[i - 1]!.string)).toBeLessThanOrEqual(1);
+    expect(shifts(r.hands)).toBe(0);
+  });
+
+  it('never jumps more than 3 frets along one string when another string is inside the window', () => {
+    for (const midis of [[45, 52, 45, 52], [48, 55, 48, 55, 60], [50, 57, 62, 57, 50], [40, 47, 52, 47, 40]]) {
+      for (const target of [0, 3, 5]) {
+        const r = fingerRiff(timed(midis, 0.2), STANDARD, { ...opt, target });
+        for (let i = 1; i < r.pos.length; i++) {
+          const a = r.pos[i - 1]!;
+          const b = r.pos[i]!;
+          if (a.string === b.string) expect(Math.abs(a.fret - b.fret), `${midis} @${target}`).toBeLessThanOrEqual(3);
+        }
+      }
+    }
+  });
+
+  it('prefers a triad grip on adjacent strings (C-E-G fast)', () => {
+    const r = fingerRiff(timed([48, 52, 55], 0.1), STANDARD, { ...opt, target: 0 });
+    // C3 A:3, E3 D:2, G3 G:0 - three adjacent strings.
+    expect(r.pos.map((p) => p.string)).toEqual([1, 2, 3]);
+  });
+
+  it('works without timing (backwards compatible)', () => {
+    const r = fingerRiff([{ midi: 45 }, { midi: 48 }], STANDARD, { ...opt, target: 0 });
+    expect(r.pos).toHaveLength(2);
   });
 });

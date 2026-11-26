@@ -10,14 +10,14 @@ import { IconButton } from './primitives';
 import { lefty, setSetting } from '../app/settings';
 import { shiftKey } from './RiffSettingsSheet';
 
-function Step(props: { label: string; value: string; id: string; onDec: () => void; onInc: () => void; decOff?: boolean; incOff?: boolean; decText?: string; incText?: string }) {
-  const { label, value, id, onDec, onInc, decOff, incOff, decText = '◀', incText = '▶' } = props;
+function Step(props: { cls?: string; label: string; value: string; id: string; onDec: () => void; onInc: () => void; decOff?: boolean; incOff?: boolean; decText?: string; incText?: string }) {
+  const { cls = '', label, value, id, onDec, onInc, decOff, incOff, decText = '◀', incText = '▶' } = props;
   return (
-    <div class="ui-stepper ctl" role="group" aria-label={label}>
+    <div class={`ui-stepper ctl ${cls}`} role="group" aria-label={label}>
       <button type="button" class="ui-stepper__btn" aria-label={`Decrease ${label}`} data-testid={`${id}-dec`} disabled={decOff} onClick={onDec}>
         {decText}
       </button>
-      <span class="ui-stepper__value" data-testid={id} aria-live="polite">
+      <span class="ui-stepper__value" data-testid={id} aria-live="polite" title={value} style={{ minWidth: `${value.length}ch` }}>
         {value}
       </span>
       <button type="button" class="ui-stepper__btn" aria-label={`Increase ${label}`} data-testid={`${id}-inc`} disabled={incOff} onClick={onInc}>
@@ -39,9 +39,12 @@ export function NeckControls() {
     const base = fg.choice < 0 ? (d > 0 ? -1 : N) : fg.choice;
     dispatch({ type: 'setRegion', region: { mode: 'auto', choice: (base + d + N) % N } });
   };
+  const anchor = fg.options[fg.choice]?.anchor;
+  const posLabel = anchor === undefined ? '–' : anchor <= 1 ? 'Open' : `Fret ${anchor}`;
   return (
     <div class="ctls" data-testid="neck-controls">
       <Step
+        cls="ctl--key"
         label="Key"
         id="ctl-key"
         value={`${pcName(r.key.tonic)} ${SHORT[r.key.scale] ?? r.key.scale}`}
@@ -49,6 +52,7 @@ export function NeckControls() {
         onInc={() => shiftKey(1)}
       />
       <Step
+        cls="ctl--oct"
         label="Octave"
         id="ctl-oct"
         value="oct"
@@ -60,9 +64,10 @@ export function NeckControls() {
         onInc={() => dispatch({ type: 'transpose', semis: 12 })}
       />
       <Step
-        label="Position"
+        cls="ctl--pos"
+        label="Neck position"
         id="ctl-pos"
-        value={N ? `${fg.choice >= 0 ? fg.choice + 1 : '–'}/${N}` : '–'}
+        value={posLabel}
         decOff={N < 2}
         incOff={N < 2}
         onDec={() => cycle(-1)}

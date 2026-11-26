@@ -1,7 +1,7 @@
 // Capture state and orchestration: options, free recording (optional count-in + clicks), auto-stop on silence, transcription, hand-off to the riff screen.
 import { signal } from '@preact/signals';
 import { countIn } from '../app/settings';
-import { riffMode, screen } from '../app/nav';
+import { screen } from '../app/nav';
 import { loadRiff, riff } from '../model/store';
 import { ensureRunning } from '../platform/audio';
 import { getLatencyMs, scheduleClick } from '../platform/latency';
@@ -208,7 +208,6 @@ function handOff(built: Riff | null, autoplay: boolean): void {
     return;
   }
   loadRiff(built);
-  riffMode.value = 'edit';
   screen.value = 'riff';
   phase.value = 'idle';
   if (autoplay) void play(0, false);

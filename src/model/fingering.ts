@@ -4,7 +4,7 @@ import { computed } from '@preact/signals';
 import type { Pos } from '../music/types';
 import { bestRegions, fingerRiff, isPlayable } from '../music/fretboard';
 import { bestPowerRegions, fingerPower } from '../music/powerchord';
-import type { Riff } from './riff';
+import { stepSeconds, type Riff } from './riff';
 import { riff } from './store';
 
 export type RiffFingering = {
@@ -29,7 +29,8 @@ const median = (xs: number[]) => {
 };
 
 export function fingeringFor(r: Riff): RiffFingering {
-  const notes = r.notes.map((n) => ({ midi: n.midi, pin: n.pin }));
+  const sec = stepSeconds(r);
+  const notes = r.notes.map((n) => ({ midi: n.midi, pin: n.pin, start: n.step * sec, end: (n.step + n.length) * sec }));
   const opt = { maxFret: r.maxFret, span: SPAN };
   const power = r.power !== 'off' ? r.power : null;
 
@@ -46,7 +47,11 @@ export function fingeringFor(r: Riff): RiffFingering {
     };
   }
 
-  const regions = power ? bestPowerRegions(notes, r.tuning, power, opt) : bestRegions(notes, r.tuning, opt);
+  const all = power ? bestPowerRegions(notes, r.tuning, power, opt) : bestRegions(notes, r.tuning, opt);
+  // Drop positions that are far worse than the best one (e.g. sliding a whole riff along one string):
+  // they're technically playable but no guitarist would choose them.
+  const best = Math.min(...all.map((x) => x.cost));
+  const regions = all.filter((x) => x.cost <= Math.max(best * 3, best + 12));
   if (!regions.length) return { pos: notes.map(() => []), hands: [], options: [], choice: -1, anchor: 0 };
   const cheapest = regions.reduce((b, x, i) => (x.cost < regions[b]!.cost ? i : b), 0);
   const choice = r.region.choice < 0 ? cheapest : Math.min(r.region.choice, regions.length - 1);

@@ -1,9 +1,8 @@
 import { riff, dispatch } from '../model/store';
 import { pcName } from '../music/theory';
-import { riffMode, screen } from '../app/nav';
+import { screen } from '../app/nav';
 import { moreOpen } from '../app/ui-state';
 import { stop } from '../audio/sync';
-import { Segmented } from './primitives';
 import './screens.css';
 
 const SCALE_LABEL: Record<string, string> = {
@@ -31,15 +30,6 @@ export function RiffHeader() {
           {pcName(r.key.tonic, false)} {SCALE_LABEL[r.key.scale] ?? r.key.scale} · {r.timing === 'free' ? 'free time' : `♩=${r.bpm}`}
         </span>
       </button>
-      <Segmented
-        testId="riff-mode"
-        options={[
-          { value: 'edit', label: 'Edit' },
-          { value: 'lesson', label: 'Learn' },
-        ]}
-        value={riffMode.value}
-        onChange={(v) => (riffMode.value = v)}
-      />
       <button class="riff-header__more" aria-label="Riff settings" data-testid="riff-more" onClick={() => (moreOpen.value = true)}>
         ⋯
       </button>

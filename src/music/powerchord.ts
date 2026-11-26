@@ -1,5 +1,5 @@
 // Power chords: root + fifth (+ octave) shapes on adjacent strings, for any tuning.
-import { COST, finish, positionsFor, sweepRegions } from './fretboard';
+import { COST, finish, positionsFor, sweepRegions, timesOf } from './fretboard';
 import type { Cand, FingerNote, Fingering, Region } from './fretboard';
 import type { Midi, Pos, Tuning } from './types';
 
@@ -61,7 +61,7 @@ export function fingerPower(
         lo = Math.min(lo, p.fret);
         hi = Math.max(hi, p.fret);
       }
-      const c: Cand = { pos: r, lo: hi ? lo : 0, hi, extra: COST.wPowerRoot * Math.max(0, r.string - 1) };
+      const c: Cand = { pos: r, lo: hi ? lo : 0, hi, extra: COST.wPowerRoot * Math.max(0, r.string - 1), midi: nt.midi, t: nt.start !== undefined && nt.end !== undefined ? { start: nt.start, end: nt.end } : undefined };
       shapeOf.set(c, sh);
       cs.push(c);
     }
@@ -85,5 +85,5 @@ export function bestPowerRegions(
   return sweepRegions<Pos[][]>((target) => {
     const f = fingerPower(notes, tuning, kind, { maxFret: opt.maxFret, span: opt.span, target });
     return { pos: f.pos, hands: f.hands, cost: f.cost, extra: f.shapes };
-  }, opt.k ?? 4, Math.max(12, opt.maxFret - (opt.span ?? 4))).map((r) => ({ ...r, shapes: r.extra ?? [] }));
+  }, opt.k ?? 4, Math.max(12, opt.maxFret - (opt.span ?? 4)), timesOf(notes)).map((r) => ({ ...r, shapes: r.extra ?? [] }));
 }
