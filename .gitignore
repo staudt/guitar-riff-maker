@@ -1,0 +1,12 @@
+node_modules
+dist
+dist-e2e
+test-results
+playwright-report
+*.local
+public/licenses
+
+# Local secrets
+.env
+.env.*
+!.env.example

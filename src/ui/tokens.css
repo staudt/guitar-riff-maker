@@ -1,0 +1,46 @@
+:root {
+  /* Surfaces */
+  --ground: #121316;
+  --surface: #1a1c21;
+  --surface-2: #22252b;
+  --border: #2e313a;
+
+  /* Text */
+  --text: #ecedef;
+  --muted: #9a9da6;
+
+  /* Semantic accents: amber = what you play/select, cyan = live pitch, coral = record */
+  --accent: #ffb547;
+  --accent-dim: rgba(255, 181, 71, 0.4);
+  --trace: #5cc8ff;
+  --rec: #ff6b5e;
+
+  /* Fretboard */
+  --wood: #2a1d16;
+  --fret: #8d8a83;
+  --string: #c9c3b8;
+
+  /* Radii */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-pill: 999px;
+
+  /* Spacing scale */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+
+  /* Touch target minimum */
+  --tap: 44px;
+
+  /* Fonts */
+  --font-ui: 'Space Grotesk', system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+
+  color-scheme: dark;
+}
+

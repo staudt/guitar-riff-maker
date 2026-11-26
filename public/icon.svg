@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <rect width="64" height="64" fill="#121316"/>
+  <!-- Scaled into the maskable safe zone (inner ~80%). -->
+  <path transform="translate(32 32) scale(0.72) translate(-32 -32)" fill="#ffb547"
+        d="M32 6 C46 22 54 34 50 46 C46 58 36 60 32 58 C28 60 18 58 14 46 C10 34 18 22 32 6 Z"/>
+</svg>

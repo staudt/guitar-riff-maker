@@ -1,0 +1,4 @@
+# Dependency build scripts are opt-in (pnpm 12). core-js (via TensorFlow.js) only prints a
+# donation message on install, so it is declined.
+allowBuilds:
+  core-js: false
