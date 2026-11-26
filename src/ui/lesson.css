@@ -1,0 +1,25 @@
+.transport { display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-3) var(--space-4); }
+.transport__row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
+.transport__tempo { flex-wrap: nowrap; }
+.transport__slider { flex: 1; min-width: 0; min-height: var(--tap); accent-color: var(--accent); }
+.transport__bpm { font-family: var(--font-mono); color: var(--muted); min-width: 72px; text-align: right; }
+
+.lesson { background: var(--surface); border-top: 1px solid var(--border); }
+.lesson__big { display: flex; flex-direction: column; align-items: center; gap: var(--space-3); padding: var(--space-3) var(--space-4) var(--space-5); }
+.lesson__caption { font-family: var(--font-mono); color: var(--text); text-align: center; min-height: 24px; }
+.lesson__steps { display: flex; gap: var(--space-3); width: 100%; max-width: 358px; }
+.lesson__btn {
+  flex: 1; min-height: 64px; border-radius: var(--radius-lg); border: 1px solid var(--border);
+  background: var(--surface-2); color: var(--text); font: 600 18px var(--font-ui); cursor: pointer; touch-action: manipulation;
+}
+.lesson__btn:active { border-color: var(--accent); }
+.lesson__btn--go { background: var(--accent); color: var(--ground); border-color: var(--accent); }
+.lesson__btn--ghost { flex: none; min-height: 56px; width: 100%; max-width: 358px; background: transparent; color: var(--muted); }
+
+.countin {
+  position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; pointer-events: none;
+  background: color-mix(in srgb, var(--ground) 70%, transparent);
+}
+.countin__row { display: flex; gap: var(--space-5); font: 700 72px var(--font-mono); color: var(--muted); }
+.countin__n { opacity: 0.4; transition: transform 0.12s, opacity 0.12s; }
+.countin__n[data-current] { color: var(--accent); opacity: 1; transform: scale(1.4); }

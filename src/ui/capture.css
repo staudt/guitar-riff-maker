@@ -1,0 +1,19 @@
+.capture-screen { display: flex; flex-direction: column; gap: var(--space-3); height: 100%; min-height: 0; padding: var(--space-3) var(--space-4); }
+.capture-head { display: flex; align-items: center; gap: var(--space-3); }
+.capture-head h1 { font-size: 1.1rem; margin: 0; }
+.capture-back { width: var(--tap); height: var(--tap); border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--surface); color: var(--text); }
+.capture-opts { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; }
+.capture-stage { position: relative; flex: 1; min-height: 160px; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--surface); overflow: hidden; }
+.pitch-trace { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.capture-count { position: absolute; inset: 0; display: grid; place-items: center; font: 700 7rem/1 var(--font-mono); color: var(--accent); pointer-events: none; text-shadow: 0 0 24px var(--accent-dim); }
+.capture-meter { height: 6px; border-radius: var(--radius-pill); background: var(--surface-2); overflow: hidden; }
+.capture-meter i { display: block; height: 100%; background: var(--trace); transition: width 60ms linear; }
+.capture-status { margin: 0; min-height: 1.4em; text-align: center; color: var(--text); }
+.capture-status[data-error] { color: var(--rec); }
+.capture-rec { display: flex; justify-content: center; }
+.capture-tip { margin: 0; color: var(--muted); font-size: 0.85rem; text-align: center; }
+.capture-cal { display: flex; align-items: center; justify-content: center; gap: var(--space-3); flex-wrap: wrap; }
+.capture-cal__btn { min-height: var(--tap); padding: 0 var(--space-4); border: 1px solid var(--border); border-radius: var(--radius-pill); background: var(--surface); color: var(--text); }
+.capture-cal__btn:disabled { opacity: 0.5; }
+.capture-cal__ms { font-family: var(--font-mono); color: var(--muted); }
+.capture-cal__msg { color: var(--rec); font-size: 0.85rem; }

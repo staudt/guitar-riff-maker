@@ -1,0 +1,271 @@
+/* UI primitives: StompButton, Stepper, Toggle, Segmented, Chip, Sheet, IconButton.
+ * Colours come from tokens only. Amber (--accent) = active/selected, coral (--rec) = record.
+ * Every control is at least var(--tap) (44px) on its touch axis. */
+
+/* ---------- StompButton ---------- */
+.ui-stomp {
+  --tone: var(--accent);
+  --stomp: 76px;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: var(--tap);
+  min-height: var(--tap);
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.ui-stomp--rec { --tone: var(--rec); }
+.ui-stomp--accent { --tone: var(--accent); }
+.ui-stomp--lg { --stomp: 76px; }
+.ui-stomp--md { --stomp: 56px; }
+
+.ui-stomp__led {
+  display: grid;
+  place-items: center;
+  width: calc(var(--stomp) + 14px);
+  height: calc(var(--stomp) + 14px);
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  transition: border-color 120ms ease, box-shadow 120ms ease;
+}
+.ui-stomp[aria-pressed='true'] .ui-stomp__led {
+  border-color: var(--tone);
+  box-shadow:
+    0 0 12px 2px color-mix(in srgb, var(--tone) 55%, transparent),
+    inset 0 0 8px color-mix(in srgb, var(--tone) 35%, transparent);
+}
+
+.ui-stomp__disc {
+  display: grid;
+  place-items: center;
+  width: var(--stomp);
+  height: var(--stomp);
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: radial-gradient(circle at 50% 35%, var(--surface-2), var(--surface));
+  color: var(--muted);
+  box-shadow: 0 4px 0 var(--ground);
+  transition: transform 60ms ease, box-shadow 60ms ease, color 120ms ease;
+}
+.ui-stomp__disc svg {
+  width: calc(var(--stomp) * 0.34);
+  height: calc(var(--stomp) * 0.34);
+}
+.ui-stomp[aria-pressed='true'] .ui-stomp__disc {
+  color: var(--tone);
+  background: radial-gradient(
+    circle at 50% 35%,
+    color-mix(in srgb, var(--tone) 18%, var(--surface-2)),
+    var(--surface)
+  );
+}
+.ui-stomp:active .ui-stomp__disc {
+  transform: translateY(2px);
+  box-shadow: 0 2px 0 var(--ground);
+}
+
+.ui-stomp__label {
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.ui-stomp[aria-pressed='true'] .ui-stomp__label { color: var(--text); }
+
+/* ---------- Stepper ---------- */
+.ui-stepper {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  overflow: hidden;
+}
+.ui-stepper__btn {
+  min-width: var(--tap);
+  min-height: var(--tap);
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  color: var(--accent);
+  font-size: 16px;
+}
+.ui-stepper__value {
+  min-width: 56px;
+  padding: 0 var(--space-2);
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 16px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+
+/* ---------- Toggle ---------- */
+.ui-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  min-height: var(--tap);
+  padding: 0 var(--space-3) 0 var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 14px;
+}
+.ui-toggle__track {
+  position: relative;
+  flex: 0 0 auto;
+  width: 44px;
+  height: 26px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border);
+  background: var(--ground);
+  transition: background 120ms ease, border-color 120ms ease;
+}
+.ui-toggle__knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--muted);
+  transition: transform 120ms ease, background 120ms ease;
+}
+.ui-toggle[aria-checked='true'] .ui-toggle__track {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 25%, var(--ground));
+}
+.ui-toggle[aria-checked='true'] .ui-toggle__knob {
+  transform: translateX(20px);
+  background: var(--accent);
+}
+
+/* ---------- Segmented ---------- */
+.ui-segmented {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+}
+.ui-segmented__opt {
+  flex: 1 1 0;
+  min-height: var(--tap);
+  padding: 0 var(--space-3);
+  border: none;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--muted);
+  font-size: 14px;
+}
+.ui-segmented__opt[aria-pressed='true'] {
+  background: var(--accent);
+  color: var(--ground);
+  font-weight: 700;
+}
+
+/* ---------- Chip ---------- */
+.ui-chip {
+  min-height: var(--tap);
+  padding: 0 var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: 14px;
+}
+.ui-chip[aria-pressed='true'] {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--ground);
+  font-weight: 700;
+}
+
+/* ---------- IconButton ---------- */
+.ui-icon-btn {
+  display: inline-grid;
+  place-items: center;
+  width: var(--tap);
+  height: var(--tap);
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 18px;
+  line-height: 1;
+}
+.ui-icon-btn[aria-pressed='true'] {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--ground);
+}
+
+/* ---------- Sheet ---------- */
+.ui-sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: color-mix(in srgb, var(--ground) 70%, transparent);
+  animation: ui-sheet-fade 160ms ease-out;
+}
+.ui-sheet {
+  position: relative;
+  width: 100%;
+  max-width: 480px;
+  max-height: 85dvh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4) max(var(--space-4), env(safe-area-inset-bottom));
+  border: 1px solid var(--border);
+  border-bottom: none;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  background: var(--surface);
+  color: var(--text);
+  outline: none;
+  animation: ui-sheet-up 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+/* Grip handle */
+.ui-sheet::before {
+  content: '';
+  align-self: center;
+  width: 40px;
+  height: 4px;
+  border-radius: var(--radius-pill);
+  background: var(--border);
+}
+.ui-sheet__title {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+@keyframes ui-sheet-up {
+  from { transform: translateY(100%); }
+  to { transform: none; }
+}
+@keyframes ui-sheet-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ui-sheet,
+  .ui-sheet-backdrop { animation: none; }
+}

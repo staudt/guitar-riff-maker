@@ -1,0 +1,205 @@
+/* Piano roll, note sheet and edit toolbar. Tokens only. */
+
+/* ---------- Roll ---------- */
+.roll {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  background: var(--ground);
+  border-block: 1px solid var(--border);
+}
+.roll__scroller {
+  height: 100%;
+  overflow: auto;
+  overscroll-behavior: contain;
+  touch-action: pan-x pan-y;
+  -webkit-overflow-scrolling: touch;
+}
+.roll[data-dragging] .roll__scroller {
+  touch-action: none;
+}
+.roll__grid {
+  position: relative;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.roll__row {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 28px;
+  border-bottom: 1px solid var(--border);
+  background: var(--ground);
+}
+.roll__row--c {
+  background: var(--surface);
+  border-bottom-color: var(--muted);
+}
+.roll__row--out {
+  background: var(--surface-2);
+  opacity: 0.55;
+}
+.roll__label {
+  position: sticky;
+  left: 0;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  width: 40px;
+  height: 100%;
+  padding-left: var(--space-2);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--muted);
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+}
+.roll__row--c .roll__label {
+  color: var(--text);
+  font-weight: 600;
+}
+.roll__line {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--border);
+  pointer-events: none;
+  z-index: 1;
+}
+.roll__line--bar {
+  width: 2px;
+  background: var(--muted);
+}
+.roll__range {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: var(--accent-dim);
+  opacity: 0.35;
+  pointer-events: none;
+  z-index: 1;
+}
+.roll__note {
+  position: absolute;
+  height: 24px;
+  z-index: 2;
+  border-radius: var(--radius-sm);
+  background: var(--accent-dim);
+  border: 1px solid var(--accent);
+  touch-action: none;
+  cursor: grab;
+}
+.roll__note--sel {
+  background: var(--accent);
+  outline: 2px solid var(--text);
+  outline-offset: 1px;
+  z-index: 3;
+}
+.roll__handle {
+  position: absolute;
+  top: -2px;
+  bottom: -2px;
+  right: -8px;
+  width: 30px;
+  touch-action: none;
+  cursor: ew-resize;
+}
+.roll__handle::after {
+  content: '';
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  right: 8px;
+  width: 8px;
+  border-radius: var(--radius-sm);
+  background: var(--text);
+  opacity: 0.55;
+}
+.roll__playhead {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 40px;
+  width: 2px;
+  background: var(--trace);
+  pointer-events: none;
+  z-index: 5;
+  will-change: transform;
+}
+
+/* ---------- Note sheet ---------- */
+.sheet-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-2);
+}
+.sheet-btn {
+  min-height: var(--tap);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-2);
+  color: var(--text);
+  font: inherit;
+  font-family: var(--font-mono);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.sheet-btn:active {
+  border-color: var(--accent);
+}
+.sheet-btn--danger {
+  color: var(--rec);
+  border-color: var(--rec);
+}
+
+/* ---------- Toolbar ---------- */
+.toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-2);
+}
+.toolbar__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1) var(--space-2);
+}
+.toolbar__group {
+  display: inline-flex;
+  align-items: center;
+}
+.toolbar__value {
+  min-width: 44px;
+  text-align: center;
+  font-family: var(--font-mono);
+  color: var(--text);
+}
+.toolbar__btn,
+.toolbar__select {
+  min-height: var(--tap);
+  padding: 0 var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-2);
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.toolbar__btn:active {
+  border-color: var(--accent);
+}
+
+/* Lesson playback highlights (attributes set by ui/playhead.ts). */
+.roll__note[data-active] {
+  background: var(--accent);
+  box-shadow: 0 0 8px var(--accent);
+}
+.roll__note[data-next] {
+  outline: 2px solid var(--accent-dim);
+  outline-offset: 1px;
+}

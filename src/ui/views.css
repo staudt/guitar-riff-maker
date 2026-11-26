@@ -1,0 +1,60 @@
+/* Tab, neck and neck controls. Tokens only. */
+
+/* ---- Tab ---- */
+.tab { display: flex; align-items: flex-start; background: var(--surface); border-radius: var(--radius-md); }
+.tab__names { flex: none; }
+.tab__name { fill: var(--muted); font: 500 11px var(--font-mono); }
+.tab__scroll { flex: 1; min-width: 0; overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+.tab__scroll::-webkit-scrollbar { display: none; }
+.tab__surface { position: relative; }
+.tab__svg { display: block; }
+.tab__line { stroke: var(--border); stroke-width: 1; }
+.tab__bar { stroke: var(--muted); stroke-width: 1.5; }
+.tab__tick { stroke: var(--border); stroke-width: 1; }
+.tab__tick--bar { stroke: var(--muted); }
+.tab__note { cursor: pointer; }
+.tab__hit { fill: transparent; }
+.tab__cellbg { fill: var(--surface); }
+.tab__num { fill: var(--text); font: 600 13px var(--font-mono); pointer-events: none; }
+.tab__note[data-selected] .tab__num,
+.tab__note[data-active] .tab__num { fill: var(--accent); }
+.tab__note[data-active] .tab__cellbg { fill: var(--accent); }
+.tab__note[data-active] .tab__num { fill: var(--ground); }
+.tab__note[data-active] { filter: drop-shadow(0 0 4px var(--accent)); }
+.tab__note[data-next] .tab__cellbg { stroke: var(--accent-dim); stroke-width: 1.5; }
+.tab__playhead { position: absolute; left: 0; top: 0; bottom: 0; width: 2px; background: var(--accent); box-shadow: 0 0 6px var(--accent); pointer-events: none; will-change: transform; }
+
+/* ---- Neck ---- */
+.neck { display: flex; flex-direction: column; gap: var(--space-1); }
+.neck__svg { width: 100%; height: auto; max-height: 150px; display: block; overflow: hidden; }
+.neck__pan { animation: neck-pan 0.28s ease-out; }
+@keyframes neck-pan { from { opacity: 0.35; transform: translateX(var(--pan, 0)); } to { opacity: 1; transform: none; } }
+.neck__wood { fill: var(--wood); stroke: var(--border); stroke-width: 1; }
+.neck__fret { stroke: var(--fret); stroke-width: 1.5; }
+.neck__nut { stroke: var(--string); stroke-width: 4; }
+.neck__string { stroke: var(--string); }
+.neck__inlay { fill: var(--fret); opacity: 0.35; }
+.neck__fretnum { fill: var(--muted); font: 500 10px var(--font-mono); }
+.neck__sname { fill: var(--muted); font: 500 9px var(--font-mono); }
+.neck__link { stroke: var(--accent-dim); stroke-width: 2; }
+.neck__dot { cursor: default; }
+.neck__dot-c { fill: var(--wood); stroke: var(--muted); stroke-width: 1.5; transition: transform 0.15s, fill 0.15s, stroke 0.15s; transform-box: fill-box; transform-origin: center; }
+.neck__dotnum { fill: var(--text); font: 600 10px var(--font-mono); pointer-events: none; }
+.neck__dot[data-selected] .neck__dot-c { fill: var(--accent); stroke: var(--accent); }
+.neck__dot[data-selected] .neck__dotnum { fill: var(--ground); }
+.neck__dot[data-active] .neck__dot-c { fill: var(--accent); stroke: var(--accent); transform: scale(1.25); filter: drop-shadow(0 0 5px var(--accent)); }
+.neck__dot[data-active] .neck__dotnum { fill: var(--ground); }
+.neck__dot[data-next] .neck__dot-c { fill: none; stroke: var(--accent-dim); stroke-width: 2.5; }
+.neck__ghost { cursor: pointer; }
+.neck__ghost-hit { fill: transparent; }
+.neck__ghost-dot { fill: none; stroke: var(--muted); stroke-width: 1.5; stroke-dasharray: 3 2; }
+.neck__dotnum--ghost { fill: var(--muted); }
+.neck__move { stroke: var(--accent-dim); stroke-width: 2; stroke-linecap: round; pointer-events: none; }
+.neck__mini { width: 100%; height: 16px; display: block; }
+.neck__mini-bg { fill: var(--wood); stroke: var(--border); stroke-width: 1; }
+.neck__mini-win { fill: var(--accent-dim); stroke: var(--accent); stroke-width: 1; }
+.neck__mini-dot { fill: var(--text); }
+
+/* ---- Controls ---- */
+.ctls { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: var(--space-2); }
+.ctls .ui-segmented { flex: none; }

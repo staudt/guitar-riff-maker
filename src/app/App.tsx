@@ -1,9 +1,22 @@
+import { useEffect } from 'preact/hooks';
+import { screen } from './nav';
+import { RiffScreen } from '../screens/Riff';
+import { loadRiff, riff } from '../model/store';
+import { demoRiff } from '../model/demo';
+import '../audio/sync';
+
+let booted = false;
+
 export function App() {
-  return (
-    <main class="app">
-      <header class="app-header">
-        <h1>Riff Maker</h1>
-      </header>
-    </main>
-  );
+  useEffect(() => {
+    if (booted) return;
+    booted = true;
+    if (!riff.value.notes.length) loadRiff(demoRiff());
+  }, []);
+
+  switch (screen.value) {
+    case 'riff':
+    default:
+      return <RiffScreen />;
+  }
 }

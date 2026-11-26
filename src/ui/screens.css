@@ -1,0 +1,92 @@
+/* Screen-level layout: header, the always-visible tab+neck stack, and the mode area below. */
+.riff-screen {
+  gap: var(--space-2);
+}
+
+.riff-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--tap);
+}
+
+.riff-header__back {
+  width: var(--tap);
+  height: var(--tap);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md, 10px);
+  background: var(--surface);
+  font-size: 1.1rem;
+}
+
+.riff-header__title {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  background: none;
+  border: 0;
+  padding: 0;
+  text-align: left;
+}
+
+.riff-header__name {
+  font-weight: 700;
+  font-size: 1.05rem;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.riff-header__meta {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--accent);
+}
+
+.riff-screen__views {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  flex: none;
+}
+
+.riff-screen__edit,
+.riff-screen__lesson {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.riff-screen__edit > [data-testid='roll'] {
+  flex: 1;
+  min-height: 0;
+}
+
+.pin-banner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--tap);
+  padding: 0 var(--space-2);
+  border: 1px dashed var(--muted);
+  border-radius: var(--radius-md, 10px);
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.pin-banner span {
+  flex: 1;
+}
+
+.pin-banner button {
+  min-height: 36px;
+  padding: 0 var(--space-3, 12px);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+}
