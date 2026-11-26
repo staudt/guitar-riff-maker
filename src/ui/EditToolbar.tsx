@@ -1,6 +1,6 @@
-import type { GridSize } from '../model/riff';
-import { dispatch, redo, redoable, riff, undo, undoable } from '../model/store';
-import { IconButton, Segmented, Toggle } from './primitives';
+import { redo, redoable, undo, undoable } from '../model/store';
+import { play, playing, stop } from '../audio/sync';
+import { IconButton, Toggle } from './primitives';
 import './editor.css';
 
 export interface EditToolbarProps {
@@ -8,20 +8,24 @@ export interface EditToolbarProps {
   onSnapScale: (on: boolean) => void;
 }
 
-const GRIDS = [
-  { value: 8 as GridSize, label: '1/8' },
-  { value: 16 as GridSize, label: '1/16' },
-];
-
-// One compact row. Key, scale, tempo, fix-out-of-key and requantize live in RiffSettingsSheet.
+// One compact row: hear the riff while editing, undo/redo, scale snap.
+// The grid (1/8 vs 1/16) is detected from the take; key, tempo and the rest live in RiffSettingsSheet.
 export function EditToolbar(props: EditToolbarProps) {
   const { snapScale, onSnapScale } = props;
-  const r = riff.value;
+  const on = playing.value;
   return (
     <div class="toolbar" data-testid="edit-toolbar">
+      <button
+        class={`toolbar__play${on ? ' toolbar__play--on' : ''}`}
+        aria-label={on ? 'Stop' : 'Play'}
+        aria-pressed={on}
+        data-testid="tb-play"
+        onClick={() => (on ? stop() : void play(0, false))}
+      >
+        {on ? '■' : '▶'} <span>{on ? 'Stop' : 'Play'}</span>
+      </button>
       <IconButton label="Undo" glyph="↶" onPress={undo} disabled={!undoable.value} testId="tb-undo" />
       <IconButton label="Redo" glyph="↷" onPress={redo} disabled={!redoable.value} testId="tb-redo" />
-      <Segmented options={GRIDS} value={r.grid} onChange={(grid) => dispatch({ type: 'setGrid', grid })} testId="tb-grid" />
       <Toggle label="Snap" on={snapScale} onChange={onSnapScale} testId="tb-snap" />
     </div>
   );

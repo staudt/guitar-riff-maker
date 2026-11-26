@@ -3,7 +3,7 @@ import { useState } from 'preact/hooks';
 import { dispatch, riff } from '../model/store';
 import { pcName, SCALES } from '../music/theory';
 import type { PitchClass, ScaleName } from '../music/types';
-import type { Bars, Instrument, PowerMode } from '../model/riff';
+import { MAX_BARS, type Instrument, type PowerMode } from '../model/riff';
 import { exportJson, shareTab } from '../model/export';
 import { keyMode, moreOpen, type KeyMode } from '../app/ui-state';
 import { IconButton, Segmented, Sheet } from './primitives';
@@ -84,12 +84,9 @@ export function RiffSettingsSheet() {
         <IconButton label="Faster" glyph="+" onPress={() => dispatch({ type: 'setBpm', bpm: r.bpm + 1 })} testId="tb-bpm-inc" />
       </Row>
       <Row label="Bars">
-        <Segmented<Bars>
-          testId="riff-bars"
-          options={[1, 2, 4, 8].map((b) => ({ value: b as Bars, label: String(b) }))}
-          value={r.bars}
-          onChange={(bars) => dispatch({ type: 'setBars', bars })}
-        />
+        <IconButton label="Fewer bars" glyph="−" disabled={r.bars <= 1} onPress={() => dispatch({ type: 'setBars', bars: r.bars - 1 })} testId="riff-bars-dec" />
+        <span class="rs-value" data-testid="riff-bars">{r.bars}</span>
+        <IconButton label="More bars" glyph="+" disabled={r.bars >= MAX_BARS} onPress={() => dispatch({ type: 'setBars', bars: r.bars + 1 })} testId="riff-bars-inc" />
       </Row>
       <Row label="Power chords">
         <Segmented<PowerMode>

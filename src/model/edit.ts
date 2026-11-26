@@ -2,6 +2,7 @@
 import { inScale, SCALES } from '../music/theory';
 import type { Midi, PitchClass, Pos, ScaleName, Tuning } from '../music/types';
 import {
+  MAX_BARS,
   newId,
   normalize,
   totalSteps,
@@ -229,9 +230,9 @@ function apply(r: Riff, a: Action): Riff {
       return { ...base, notes: snapExisting(r.notes, a.grid) };
     }
     case 'halfTime':
-      return rescale(r, 2, Math.min(8, r.bars * 2));
+      return rescale(r, 2, Math.min(MAX_BARS, r.bars * 2));
     case 'doubleTime':
-      return rescale(r, 0.5, Math.max(1, r.bars / 2));
+      return rescale(r, 0.5, Math.max(1, Math.ceil(r.bars / 2)));
     case 'transpose':
       return transposeAll(r, a.semis);
     case 'transposeDiatonic':
@@ -259,7 +260,7 @@ function apply(r: Riff, a: Action): Riff {
     case 'setBpm':
       return { ...r, bpm: clamp(Math.round(a.bpm), 30, 300) };
     case 'setBars':
-      return { ...r, bars: a.bars };
+      return { ...r, bars: clamp(Math.round(a.bars), 1, MAX_BARS) };
     case 'pin':
       return mapNote(r, a.id, (n) => ({ ...n, pin: { ...a.pos } }));
     case 'unpin':

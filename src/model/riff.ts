@@ -22,7 +22,9 @@ export type RiffNote = {
 export type PowerMode = 'off' | 'r5' | 'r58';
 export type Instrument = 'clean' | 'drive' | 'guide';
 export type GridSize = 8 | 16;
-export type Bars = 1 | 2 | 4 | 8;
+/** Riff length in 4/4 bars (1..MAX_BARS). Any whole number: a free-recorded riff takes as many bars as it needs. */
+export type Bars = number;
+export const MAX_BARS = 16;
 export type Region = { mode: 'auto'; choice: number } | { mode: 'anchor'; fret: number };
 
 export type Riff = {
@@ -149,7 +151,7 @@ export const RiffSchema = z.object({
   bpm: z.number().min(1),
   timeSig: z.tuple([z.literal(4), z.literal(4)]),
   grid: z.union([z.literal(8), z.literal(16)]),
-  bars: z.union([z.literal(1), z.literal(2), z.literal(4), z.literal(8)]),
+  bars: z.number().int().min(1).max(MAX_BARS),
   key: z.object({
     tonic: z.number().int().min(0).max(11),
     scale: z.enum(['minor', 'major', 'dorian', 'mixolydian', 'pentatonic']),

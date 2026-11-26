@@ -1,13 +1,12 @@
 // Transcription -> Riff: quantize, fit the melody into guitar range, detect the key.
-import { quantize } from './notes';
+import { autoQuantize } from './tempo';
 import { detectKey, octaveFit } from './key';
 import type { RawNote, Transcription } from './types';
-import { newId, newRiff, type Bars, type GridSize, type PowerMode, type Riff } from '../model/riff';
+import { newId, newRiff, type Bars, type PowerMode, type Riff } from '../model/riff';
 
 export type ToRiffOpts = {
-  bpm: number;
-  bars: 1 | 2 | 4;
-  grid: GridSize;
+  /** Known tempo (metronome mode); otherwise it is estimated from the notes. */
+  hintBpm?: number;
   power: PowerMode;
   /** Lowest open string, MIDI (40 in standard tuning). */
   tuningLow: number;
@@ -23,8 +22,9 @@ export function defaultName(d = new Date()): string {
 }
 
 export function toRiff(trans: Transcription, opts: ToRiffOpts): Riff {
-  const { bpm, bars, grid, power, tuningLow, base } = opts;
-  const grid0 = quantize(trans.notes, bpm, grid, bars * 16);
+  const { hintBpm, power, tuningLow, base } = opts;
+  const auto = autoQuantize(trans.notes, { hintBpm, maxBars: 16 });
+  const grid0 = auto.notes;
   const center = power === 'off' ? 55 : 45;
   let shift = octaveFit(grid0, center);
   if (grid0.length) {
@@ -42,16 +42,16 @@ export function toRiff(trans: Transcription, opts: ToRiffOpts): Riff {
     velocity: Math.max(1, Math.min(127, Math.round(n.velocity))),
   }));
   const key = grid0.length ? detectKey(notes) : { tonic: 9 as const, scale: 'minor' as const };
-  const raw: RawNote[] = trans.notes.map((n) => ({ ...n, midi: n.midi + shift }));
+  const raw: RawNote[] = trans.notes.map((n) => ({ ...n, start: n.start - auto.offset, end: n.end - auto.offset, midi: n.midi + shift }));
   return newRiff({
     name: defaultName(),
     ...base,
-    bpm,
-    bars: bars as Bars,
-    grid,
+    bpm: Math.round(auto.bpm),
+    bars: auto.bars as Bars,
+    grid: auto.grid,
     power,
     key: { tonic: key.tonic, scale: key.scale },
     notes,
-    capture: { raw, bpm },
+    capture: { raw, bpm: auto.bpm },
   });
 }

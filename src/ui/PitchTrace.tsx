@@ -1,4 +1,4 @@
-// Live pitch trace: cyan line in a 12-semitone window that re-centres on the voice, with bar/beat lines.
+// Live pitch trace: cyan line in a 12-semitone window that re-centres on the voice, scrolling over the last few seconds (beat lines only with the metronome).
 import { useEffect, useRef } from 'preact/hooks';
 import { getRun, options } from '../capture/session';
 import { hzToMidi } from '../capture/pitch';
@@ -6,6 +6,8 @@ import type { PitchFrame } from '../capture/types';
 import './capture.css';
 
 const ROWS = 12;
+/** Seconds of history on screen. */
+const WIN = 6;
 const LABEL_W = 34;
 const NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 const noteName = (m: number) => `${NAMES[((m % 12) + 12) % 12]}${Math.floor(m / 12) - 1}`;
@@ -70,44 +72,46 @@ export function PitchTrace() {
         g.fillStyle = cText;
         g.fillText(noteName(midi), 8, y + rowH / 2);
       }
-      const bars = r ? r.bars : options.value.bars;
-      for (let b = 0; b <= bars * 4; b++) {
-        const x = LABEL_W + (plotW * b) / (bars * 4) - (b === bars * 4 ? 1 : 0);
-        g.fillStyle = cBorder;
-        g.globalAlpha = b % 4 === 0 ? 1 : 0.45;
-        g.fillRect(x, 0, 1, h);
-      }
-      g.globalAlpha = 1;
-      g.fillStyle = cText;
-      for (let b = 0; b < bars; b++) g.fillText(`${b + 1}`, LABEL_W + (plotW * b) / bars + 4, 9);
-
       if (!r) return;
-      const totalS = r.bars * r.barDur;
-      const xOf = (t: number) => LABEL_W + (plotW * (t - r.offset)) / totalS;
+      const t0 = r.tBar1 - r.live.startTime;
+      const cur = Math.max(0, r.ctx.currentTime - r.live.startTime);
+      const tEnd = Math.max(WIN, cur);
+      const xOf = (t: number) => LABEL_W + (plotW * (t - (tEnd - WIN))) / WIN;
       const yOf = (m: number) => h - (m - base + 0.5) * rowH;
+      if (r.metronome) {
+        for (let k = Math.max(0, Math.ceil((tEnd - WIN - t0) / r.beatS)); t0 + k * r.beatS <= tEnd; k++) {
+          const x = xOf(t0 + k * r.beatS);
+          if (x < LABEL_W) continue;
+          g.fillStyle = cBorder;
+          g.globalAlpha = k % 4 === 0 ? 1 : 0.45;
+          g.fillRect(x, 0, 1, h);
+        }
+        g.globalAlpha = 1;
+      }
+      const fr = r.live.frames;
       g.strokeStyle = cTrace;
       g.lineWidth = 3;
       g.lineCap = 'round';
       g.lineJoin = 'round';
       g.beginPath();
       let pen = false;
-      let prev = 0;
-      for (const f of r.live.frames) {
+      let prevM = 0;
+      let first = fr.length;
+      for (let i = fr.length - 1; i >= 0 && fr[i]!.t > tEnd - WIN - 0.5; i--) first = i;
+      for (let i = first; i < fr.length; i++) {
+        const f = fr[i]!;
         if (f.hz <= 0) { pen = false; continue; }
         const x = xOf(f.t);
         if (x < LABEL_W - 4 || x > w) { pen = false; continue; }
         const m = hzToMidi(f.hz);
-        if (pen && Math.abs(m - prev) > 2.5) pen = false;
+        if (pen && Math.abs(m - prevM) > 2.5) pen = false;
         if (pen) g.lineTo(x, yOf(m)); else g.moveTo(x, yOf(m));
         pen = true;
-        prev = m;
+        prevM = m;
       }
       g.stroke();
-      const head = (r.ctx.currentTime - r.tBar1) / r.barDur;
-      if (head >= 0 && head <= r.bars) {
-        g.fillStyle = cAccent;
-        g.fillRect(LABEL_W + (plotW * head) / r.bars - 1, 0, 2, h);
-      }
+      g.fillStyle = cAccent;
+      g.fillRect(xOf(cur) - 1, 0, 2, h);
     };
     raf = requestAnimationFrame(draw);
     return () => cancelAnimationFrame(raf);

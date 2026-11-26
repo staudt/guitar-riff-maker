@@ -145,10 +145,10 @@ describe('timing', () => {
     expect(d.bars).toBe(2);
     expect(d.notes.map(strip)).toEqual(r.notes.map(strip));
   });
-  it('halfTime at 8 bars drops overflow', () => {
-    const r = newRiff({ bars: 8, notes: [{ id: 'a', step: 0, length: 2, midi: 45, velocity: 90 }, { id: 'b', step: 100, length: 2, midi: 45, velocity: 90 }] });
+  it('halfTime at 16 bars drops overflow', () => {
+    const r = newRiff({ bars: 16, notes: [{ id: 'a', step: 0, length: 2, midi: 45, velocity: 90 }, { id: 'b', step: 200, length: 2, midi: 45, velocity: 90 }] });
     const h = reduce(r, { type: 'halfTime' });
-    expect(h.bars).toBe(8);
+    expect(h.bars).toBe(16);
     expect(h.notes.map((n) => n.id)).toEqual(['a']);
   });
 });

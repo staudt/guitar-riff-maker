@@ -43,7 +43,9 @@ describe('parseRiff', () => {
   it('rejects junk', () => {
     expect(() => parseRiff(null)).toThrow();
     expect(() => parseRiff({ v: 1 })).toThrow();
-    expect(() => parseRiff({ ...demoRiff(), bars: 3 })).toThrow();
+    expect(() => parseRiff({ ...demoRiff(), bars: 17 })).toThrow();
+    expect(() => parseRiff({ ...demoRiff(), bars: 0 })).toThrow();
+    expect(parseRiff({ ...demoRiff(), bars: 3 }).bars).toBe(3);
     expect(() => parseRiff({ ...demoRiff(), v: 2 })).toThrow();
   });
 });

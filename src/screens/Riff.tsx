@@ -1,5 +1,5 @@
 // The main screen: tab + neck on top (always visible), then either the editor or the lesson panel.
-import { useEffect, useState } from 'preact/hooks';
+import { useEffect, useRef, useState } from 'preact/hooks';
 import { riff, dispatch, selection } from '../model/store';
 import { fingering } from '../model/fingering';
 import { alternatives } from '../music/fretboard';
@@ -26,8 +26,13 @@ export function RiffScreen() {
   const mode = riffMode.value;
 
   useEffect(() => installPlayhead(), []);
+  useEffect(() => () => stop(), []);
+  // Switching Edit <-> Learn stops playback (each mode has its own play control). Not on first mount:
+  // a fresh capture lands here and starts playing right away.
+  const firstMode = useRef(true);
   useEffect(() => {
-    if (mode === 'edit') stop();
+    if (firstMode.current) firstMode.current = false;
+    else stop();
     setOpenId(null);
     setPinId(null);
   }, [mode]);
